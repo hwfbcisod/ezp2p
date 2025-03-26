@@ -1,0 +1,14 @@
+I need to create a lightweight purchase to pay system. Let's begin by describing the process it's supposed to automate.
+
+The first step is to create a purchase order request (POR) where the user (REQUESTER) specifies the items they need to purchase. 
+The purchase order request should include the items which need to be purchased and the quantites for each item.
+
+The next step is to send the POR to a user (APPROVER) who has the authority to approve or reject it.
+
+If the purchase order request (POR) is approved, the next step is creating the purchase order (PO).
+The purchase order should include the items which need to be purchased, the quantities for each item, and the supplier from which the items will be purchased.
+
+A POR might include items from multiple suppliers, so it should be split into multiple POs, one for each supplier.
+
+This is a document that lists the items that need to be purchased, along with the quantity and price of each item.
+The purchase order is then sent to the supplier, who will fulfill the order and send an invoice.
