@@ -19,3 +19,9 @@ The INVOICE PAYER is responsible for the timely transfer of funds to the SUPPLIE
 If the INVOICE APPROVER rejects, he must provide a reason and the process continues with a procedure which handles the rejection.
 Once the INVOICE PAYER has transfered the money to the SUPPLIER, he must attach a document for payment as proof.
 The process ends.
+
+Technologies
+
+This system will be accessed primarily from the browser. For the backend I intend to use ASP.NET Core with C#.
+For the frontend I intend to use React with TypeScript.
+For data persistance I'll use a relational database - PostgreSQL.
