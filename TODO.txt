@@ -1,0 +1,1 @@
+Persist the state of the StateMachine in a data store and use it when firing it up.

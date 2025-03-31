@@ -18,7 +18,7 @@ public class StateMachineTests
     public void Fire_Start_ShouldTransitionFromNotStartedToExecuting()
     {
         var stateMachine = new StateMachine(State.NotStarted);
-        stateMachine.ConfigureTransition(State.NotStarted, State.Executing, Trigger.Start);
+        stateMachine.ConfigureTransition(State.NotStarted, State.Executing, Trigger.Start, () => { });
 
         stateMachine.Fire(Trigger.Start);
 
@@ -29,7 +29,7 @@ public class StateMachineTests
     public void Fire_Stop_ShouldTransitionFromExecutingToHibernated()
     {
         var stateMachine = new StateMachine(State.Executing);
-        stateMachine.ConfigureTransition(State.Executing, State.Hibernated, Trigger.Stop);
+        stateMachine.ConfigureTransition(State.Executing, State.Hibernated, Trigger.Stop, () => { });
 
         stateMachine.Fire(Trigger.Stop);
 
@@ -40,7 +40,7 @@ public class StateMachineTests
     public void Fire_Resume_ShouldTransitionFromHibernatedToExecuting()
     {
         var stateMachine = new StateMachine(State.Hibernated);
-        stateMachine.ConfigureTransition(State.Hibernated, State.Executing, Trigger.Resume);
+        stateMachine.ConfigureTransition(State.Hibernated, State.Executing, Trigger.Resume, () => { });
 
         stateMachine.Fire(Trigger.Resume);
 
@@ -51,7 +51,7 @@ public class StateMachineTests
     public void Fire_Finish_ShouldTransitionFromExecutingToFinished()
     {
         var stateMachine = new StateMachine(State.Executing);
-        stateMachine.ConfigureTransition(State.Executing, State.Finished, Trigger.Finish);
+        stateMachine.ConfigureTransition(State.Executing, State.Finished, Trigger.Finish, () => { });
 
         stateMachine.Fire(Trigger.Finish);
 
@@ -62,7 +62,7 @@ public class StateMachineTests
     public void Fire_Fail_ShouldTransitionFromExecutingToFinished()
     {
         var stateMachine = new StateMachine(State.Executing);
-        stateMachine.ConfigureTransition(State.Executing, State.Finished, Trigger.Fail);
+        stateMachine.ConfigureTransition(State.Executing, State.Finished, Trigger.Fail, () => { });
 
         stateMachine.Fire(Trigger.Fail);
 
@@ -100,10 +100,10 @@ public class StateMachineTests
     {
         var stateMachine = new StateMachine(State.NotStarted);
 
-        stateMachine.ConfigureTransition(State.NotStarted, State.Executing, Trigger.Start);
-        stateMachine.ConfigureTransition(State.Executing, State.Hibernated, Trigger.Stop);
-        stateMachine.ConfigureTransition(State.Hibernated, State.Executing, Trigger.Resume);
-        stateMachine.ConfigureTransition(State.Executing, State.Finished, Trigger.Finish);
+        stateMachine.ConfigureTransition(State.NotStarted, State.Executing, Trigger.Start, () => { });
+        stateMachine.ConfigureTransition(State.Executing, State.Hibernated, Trigger.Stop, () => { });
+        stateMachine.ConfigureTransition(State.Hibernated, State.Executing, Trigger.Resume, () => { });
+        stateMachine.ConfigureTransition(State.Executing, State.Finished, Trigger.Finish, () => { });
 
         Assert.Equal(State.NotStarted, stateMachine.CurrentState);
 
