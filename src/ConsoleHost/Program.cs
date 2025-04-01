@@ -1,5 +1,5 @@
 ﻿using EasyP2P.Infrastructure;
-using System;
+using Infrastructure.Sql.Interfaces;
 
 namespace EasyP2P.ConsoleHost;
 
@@ -15,5 +15,10 @@ public class Program
         stateMachine.Fire(Trigger.CreateThreeWayMatchTask);
         stateMachine.Fire(Trigger.CreateInvoiceApprovalTask);
         stateMachine.Fire(Trigger.PayInvoice);
+
+        var postgresConnection = "Host=localhost;Port=5432;Database=ezp2p;Username=postgres;Password=mypass;";
+
+        var stateMachineRepository = new PostgresStateMachineRepository(postgresConnection);
+        stateMachineRepository.SaveAsync(stateMachine).Wait();
     }
 }
