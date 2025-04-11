@@ -1,8 +1,6 @@
 using EasyP2P.Infrastructure.Exceptions;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
 
 namespace EasyP2P.Infrastructure;
 
@@ -22,7 +20,7 @@ public enum Trigger
     CreatePurchaseOrderApprovalTask,
     SendPurchaseOrder,
     CreateThreeWayMatchTask,
-    CreateInvoiceApprovalTask,
+    CreatePaymentApprovalTask,
     PayInvoice,
     Resume,
     Stop,
@@ -54,6 +52,7 @@ public class TransitionHistory
     public Trigger Trigger { get; }
     public DateTime Timestamp { get; }
 
+
     public TransitionHistory(State fromState, State toState, Trigger trigger)
     {
         Id = Guid.NewGuid();
@@ -73,7 +72,7 @@ public class StateMachine
         { (State.Hibernated, Trigger.CreatePurchaseOrderCreationTask), new Transition(State.Hibernated, State.Hibernated, Trigger.CreatePurchaseOrderCreationTask, () => { Console.WriteLine("Creating a task for purchase order creation..."); }) },
         { (State.Hibernated, Trigger.CreatePurchaseOrderApprovalTask), new Transition(State.Hibernated, State.Hibernated, Trigger.CreatePurchaseOrderApprovalTask, () => { Console.WriteLine("Creating a purchase order approval task...") ;}) },
         { (State.Hibernated, Trigger.CreateThreeWayMatchTask), new Transition(State.Hibernated, State.Hibernated, Trigger.CreateThreeWayMatchTask, () => { Console.WriteLine("Creating a task for three way matching..."); }) },
-        { (State.Hibernated, Trigger.CreateInvoiceApprovalTask), new Transition(State.Hibernated, State.Hibernated, Trigger.CreateInvoiceApprovalTask, () => { Console.WriteLine("Creating an invoice approval task...");}) },
+        { (State.Hibernated, Trigger.CreatePaymentApprovalTask), new Transition(State.Hibernated, State.Hibernated, Trigger.CreatePaymentApprovalTask, () => { Console.WriteLine("Creating an invoice approval task...");}) },
         { (State.Hibernated, Trigger.PayInvoice), new Transition(State.Hibernated, State.Finished, Trigger.PayInvoice, () => { Console.WriteLine("Paying invoice...");})},
         { (State.Executing, Trigger.Stop), new Transition(State.Executing, State.Finished, Trigger.Stop, () => { Console.WriteLine("Stopping..."); }) }
     };
@@ -116,7 +115,6 @@ public class StateMachine
         transition.Action?.Invoke();
         CurrentState = transition.Destination;
 
-        // Record the transition in memory
         var historyEntry = new TransitionHistory(previousState, CurrentState, trigger);
         _transitionHistory.Add(historyEntry);
 
