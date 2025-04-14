@@ -1,6 +1,7 @@
 ﻿using EasyP2P.Infrastructure;
 using Infrastructure.Sql.Exceptions;
 using Infrastructure.Sql.Interfaces;
+using Microsoft.Extensions.Configuration;
 using Npgsql;
 
 namespace Infrastructure.Sql;
@@ -8,9 +9,9 @@ public class PostgresStateMachineRepository : IStateMachineRepository
 {
     private readonly string _connectionString;
 
-    public PostgresStateMachineRepository(string connectionString)
+    public PostgresStateMachineRepository(IConfiguration configuration)
     {
-        _connectionString = connectionString;
+        _connectionString = configuration["postgresConnectionString"];
     }
 
     public async Task<StateMachine> LoadAsync(Guid id)

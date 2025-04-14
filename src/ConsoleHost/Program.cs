@@ -1,5 +1,6 @@
 ﻿using EasyP2P.Infrastructure;
 using Infrastructure.Sql;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Threading.Tasks;
 
@@ -9,8 +10,14 @@ public class Program
 {
     static async Task Main(string[] args)
     {
-        var postgresConnection = "";
-        var stateMachineRepository = new PostgresStateMachineRepository(postgresConnection);
+        var builder = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddUserSecrets<Program>()
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+
+        var config = builder.Build();
+
+        var stateMachineRepository = new PostgresStateMachineRepository(config);
         var stateMachineManager = new StateMachineManager(stateMachineRepository);
         var stateMachine = stateMachineManager.Create(State.NotStarted);
 
