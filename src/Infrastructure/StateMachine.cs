@@ -16,12 +16,11 @@ public enum Trigger
 {
     Start,
     CreatePurchaseOrderRequestApprovalTask,
-    CreatePurchaseOrderCreationTask,
+    CreatePurchaseOrderTask,
     CreatePurchaseOrderApprovalTask,
-    SendPurchaseOrder,
     CreateThreeWayMatchTask,
     CreatePaymentApprovalTask,
-    PayInvoice,
+    ExecutePayment,
     Resume,
     Stop,
     Finish,
@@ -69,11 +68,11 @@ public class StateMachine
     {
         { (State.NotStarted, Trigger.Start), new Transition(State.NotStarted, State.Executing, Trigger.Start, () => { Console.WriteLine("Starting...");}) },
         { (State.Executing, Trigger.CreatePurchaseOrderRequestApprovalTask), new Transition(State.Executing, State.Hibernated, Trigger.CreatePurchaseOrderRequestApprovalTask, () => { Console.WriteLine("Creating a task for purchase order request approval..."); }) },
-        { (State.Hibernated, Trigger.CreatePurchaseOrderCreationTask), new Transition(State.Hibernated, State.Hibernated, Trigger.CreatePurchaseOrderCreationTask, () => { Console.WriteLine("Creating a task for purchase order creation..."); }) },
+        { (State.Hibernated, Trigger.CreatePurchaseOrderTask), new Transition(State.Hibernated, State.Hibernated, Trigger.CreatePurchaseOrderTask, () => { Console.WriteLine("Creating a task for purchase order creation..."); }) },
         { (State.Hibernated, Trigger.CreatePurchaseOrderApprovalTask), new Transition(State.Hibernated, State.Hibernated, Trigger.CreatePurchaseOrderApprovalTask, () => { Console.WriteLine("Creating a purchase order approval task...") ;}) },
         { (State.Hibernated, Trigger.CreateThreeWayMatchTask), new Transition(State.Hibernated, State.Hibernated, Trigger.CreateThreeWayMatchTask, () => { Console.WriteLine("Creating a task for three way matching..."); }) },
         { (State.Hibernated, Trigger.CreatePaymentApprovalTask), new Transition(State.Hibernated, State.Hibernated, Trigger.CreatePaymentApprovalTask, () => { Console.WriteLine("Creating an invoice approval task...");}) },
-        { (State.Hibernated, Trigger.PayInvoice), new Transition(State.Hibernated, State.Finished, Trigger.PayInvoice, () => { Console.WriteLine("Paying invoice...");})},
+        { (State.Hibernated, Trigger.ExecutePayment), new Transition(State.Hibernated, State.Finished, Trigger.ExecutePayment, () => { Console.WriteLine("Paying...");})},
         { (State.Executing, Trigger.Stop), new Transition(State.Executing, State.Finished, Trigger.Stop, () => { Console.WriteLine("Stopping..."); }) }
     };
 

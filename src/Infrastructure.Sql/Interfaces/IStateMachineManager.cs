@@ -1,7 +1,8 @@
-﻿using System;
+﻿using EasyP2P.Infrastructure;
+using System;
 using System.Threading.Tasks;
 
-namespace EasyP2P.Infrastructure.Interfaces;
+namespace Infrastructure.Sql.Interfaces;
 
 // The purpose of this manager is to have a single place where
 // creating, loading and saving a state machine can occur.

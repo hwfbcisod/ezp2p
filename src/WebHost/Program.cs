@@ -1,3 +1,6 @@
+using EasyP2P.Infrastructure;
+using Infrastructure.Sql;
+using Infrastructure.Sql.Interfaces;
 
 namespace WebHost;
 
@@ -8,8 +11,9 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // Add services to the container.
-
-
+        var postgresConnection = "Host=localhost;Port=5432;Database=abc;Username=abc;Password=abc;";
+        builder.Services.AddSingleton<IStateMachineRepository>(new PostgresStateMachineRepository(postgresConnection));
+        builder.Services.AddScoped<IStateMachineManager, StateMachineManager>();
         builder.Services.AddControllers();
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();

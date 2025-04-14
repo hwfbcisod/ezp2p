@@ -16,7 +16,7 @@ public class Program
 
         stateMachine.Fire(Trigger.Start);
         stateMachine.Fire(Trigger.CreatePurchaseOrderRequestApprovalTask);
-        stateMachine.Fire(Trigger.CreatePurchaseOrderCreationTask);
+        stateMachine.Fire(Trigger.CreatePurchaseOrderTask);
         stateMachine.Fire(Trigger.CreatePurchaseOrderApprovalTask);
         stateMachine.Fire(Trigger.CreateThreeWayMatchTask);
         stateMachine.Fire(Trigger.CreatePaymentApprovalTask);
