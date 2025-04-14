@@ -11,7 +11,7 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // Add services to the container.
-        var postgresConnection = "Host=localhost;Port=5432;Database=abc;Username=abc;Password=abc;";
+        var postgresConnection = "";
         builder.Services.AddSingleton<IStateMachineRepository>(new PostgresStateMachineRepository(postgresConnection));
         builder.Services.AddScoped<IStateMachineManager, StateMachineManager>();
         builder.Services.AddControllers();

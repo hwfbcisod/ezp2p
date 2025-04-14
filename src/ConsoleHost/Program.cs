@@ -1,5 +1,5 @@
 ﻿using EasyP2P.Infrastructure;
-using Infrastructure.Sql.Interfaces;
+using Infrastructure.Sql;
 using System;
 using System.Threading.Tasks;
 
@@ -9,7 +9,7 @@ public class Program
 {
     static async Task Main(string[] args)
     {
-        var postgresConnection = "Host=localhost;Port=5432;Database=ezp2p;Username=postgres;Password=P@ssw0rd;";
+        var postgresConnection = "";
         var stateMachineRepository = new PostgresStateMachineRepository(postgresConnection);
         var stateMachineManager = new StateMachineManager(stateMachineRepository);
         var stateMachine = stateMachineManager.Create(State.NotStarted);
@@ -20,7 +20,7 @@ public class Program
         stateMachine.Fire(Trigger.CreatePurchaseOrderApprovalTask);
         stateMachine.Fire(Trigger.CreateThreeWayMatchTask);
         stateMachine.Fire(Trigger.CreatePaymentApprovalTask);
-        stateMachine.Fire(Trigger.PayInvoice);
+        stateMachine.Fire(Trigger.ExecutePayment);
 
         await stateMachineRepository.SaveAsync(stateMachine).ConfigureAwait(false);
         var loadedStateMachine = await stateMachineRepository.LoadAsync(stateMachine.Id).ConfigureAwait(false);
