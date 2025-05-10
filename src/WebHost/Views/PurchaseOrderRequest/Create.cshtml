@@ -1,0 +1,89 @@
+﻿@model WebHost2.Models.PurchaseOrderRequest
+@{
+    ViewData["Title"] = "Create Purchase Order Request";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/por-styles.css" />
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">Purchase Order Request</h2>
+                </div>
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show">
+                            <i class="bi bi-check-circle-fill"></i> @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (!ViewData.ModelState.IsValid && ViewContext.HttpContext.Request.Method == "POST")
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Please correct the errors below.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Please enter the item you need, the quantity, and any relevant comments.
+                    </div>
+
+                    <form id="porForm" asp-controller="PurchaseOrderRequest" asp-action="Create" method="post">
+                        <div class="mb-4">
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <label asp-for="ItemName" class="form-label">Item Name</label>
+                                    <input asp-for="ItemName" class="form-control" required>
+                                    <span asp-validation-for="ItemName" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label asp-for="Quantity" class="form-label">Quantity</label>
+                                    <input asp-for="Quantity" class="form-control" min="1" required>
+                                    <span asp-validation-for="Quantity" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <label asp-for="Comments" class="form-label">Comments</label>
+                                    <textarea asp-for="Comments" class="form-control" rows="3" required></textarea>
+                                    <span asp-validation-for="Comments" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-secondary" id="clearForm">
+                                        <i class="bi bi-x-circle"></i> Clear
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-send"></i> Submit Request
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/por-script.js"></script>
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

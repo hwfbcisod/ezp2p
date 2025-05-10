@@ -1,0 +1,110 @@
+﻿// Views/PurchaseApproval/All.cshtml
+@model IEnumerable<EasyP2P.Web.Models.PurchaseOrderRequestViewModel>
+
+@{
+    ViewData["Title"] = "All Purchase Order Requests";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>All Purchase Order Requests</h2>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-secondary me-2">View Pending Requests</a>
+            <form asp-action="AddSample" method="post" style="display: inline;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-primary">
+                    Add Sample POR
+                </button>
+            </form>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5>All Purchase Order Requests (@Model.Count())</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Comment</th>
+                                <th>Date</th>
+                                <th>Requested By</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr class="@(item.Status == "Approved" ? "table-success" : item.Status == "Rejected" ? "table-danger" : "")">
+                                    <td>@item.Id</td>
+                                    <td>@item.ItemName</td>
+                                    <td>@item.Quantity</td>
+                                    <td>@item.Comment</td>
+                                    <td>@item.RequestDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>@item.RequestedBy</td>
+                                    <td>@item.Status</td>
+                                    <td>
+                                        @if (item.Status == "Approved")
+                                        {
+                                            <a asp-controller="PurchaseOrder" asp-action="Create" asp-route-id="@item.Id" class="btn btn-primary btn-sm">
+                                                Create PO
+                                            </a>
+                                        }
+                                        else if (item.Status == "Pending")
+                                        {
+                                            <div class="btn-group" role="group">
+                                                <form asp-action="Approve" asp-route-id="@item.Id" method="post" style="display: inline;">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Are you sure you want to approve this request?')">
+                                                        Approve
+                                                    </button>
+                                                </form>
+
+                                                <form asp-action="Reject" asp-route-id="@item.Id" method="post" style="display: inline; margin-left: 5px;">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to reject this request?')">
+                                                        Reject
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    No purchase order requests found. Click "Add Sample POR" to create a test request.
+                </div>
+            }
+        </div>
+    </div>
+</div>

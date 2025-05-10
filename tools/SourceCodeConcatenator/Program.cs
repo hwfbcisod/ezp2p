@@ -6,11 +6,14 @@ class Program
 {
     static void Main(string[] args)
     {
-        Console.WriteLine("C# File Concatenator");
+        Console.WriteLine("File Concatenator");
         Console.WriteLine("--------------------");
 
         var repositoryPath = "";
-        var outputFileName = "";
+        var csOutputFileName = "cs-files.txt";
+        var jsOutputFileName = "js-files.txt";
+        var cssOutputFileName = "css-files.txt";
+        var htmlOutputFileName = "cshtml-files.txt";
 
         // Get repository path
         if (args.Length > 0)
@@ -31,70 +34,84 @@ class Program
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(outputFileName))
-        {
-            Console.Write("Enter the output file path (default: combined.cs in current directory): ");
-            outputFileName = Console.ReadLine().Trim();
+        Console.WriteLine("Output files will be available in directory of the process.");
 
-            if (string.IsNullOrWhiteSpace(outputFileName))
-            {
-                outputFileName = "combined.cs";
-            }
+        // Find all .cs files
+        var csFiles = Directory.GetFiles(repositoryPath, "*.cs", SearchOption.AllDirectories);
+        var jsFiles = Directory.GetFiles(repositoryPath, "*.js", SearchOption.AllDirectories);
+        var cssFiles = Directory.GetFiles(repositoryPath, "*.css", SearchOption.AllDirectories);
+        var htmlFiles = Directory.GetFiles(repositoryPath, "*.cshtml", SearchOption.AllDirectories);
+
+        Console.WriteLine($"Found {csFiles.Length} .cs files in the repository.");
+
+        bool foundAny = false;
+        if (csFiles.Length > 0)
+        {
+            foundAny = true;
         }
 
-        try
+        if (jsFiles.Length > 0)
         {
+            foundAny = true;
+        }
 
-            // Find all .cs files
-            string[] csFiles = Directory.GetFiles(repositoryPath, "*.cs", SearchOption.AllDirectories);
+        if (htmlFiles.Length > 0)
+        {
+            foundAny = true;
+        }
 
-            Console.WriteLine($"Found {csFiles.Length} .cs files in the repository.");
+        if (cssFiles.Length > 0)
+        {
+            foundAny = true;
+        }
 
-            if (csFiles.Length == 0)
+        if (!foundAny)
+        {
+            throw new Exception("No files to concatanate!");
+        }
+
+        ConcatanateFiles(csFiles, repositoryPath, csOutputFileName);
+        ConcatanateFiles(jsFiles, repositoryPath, jsOutputFileName);
+        ConcatanateFiles(cssFiles, repositoryPath, cssOutputFileName);
+        ConcatanateFiles(htmlFiles, repositoryPath, htmlOutputFileName);
+    }
+
+    static void ConcatanateFiles(string[] files, string repositoryPath, string outputFileName)
+    {
+        // Create the combined file
+        var outputFilePath = Path.Combine(Directory.GetCurrentDirectory(), outputFileName);
+        using (StreamWriter outputFile = new StreamWriter(outputFilePath, false, Encoding.UTF8))
+        {
+            // Add header comment
+            var outputFileExtension = Path.GetExtension(outputFilePath);
+            outputFile.WriteLine("// Generated on: " + DateTime.Now.ToString());
+            outputFile.WriteLine();
+
+            // Process each file
+            foreach (string filePath in files)
             {
-                Console.WriteLine("No .cs files found. Exiting...");
-                return;
-            }
+                string relativePath = GetRelativePath(filePath, repositoryPath);
 
-            // Create the combined file
-            var outputFilePath = Path.Combine(Directory.GetCurrentDirectory(), outputFileName);
-            using (StreamWriter outputFile = new StreamWriter(outputFilePath, false, Encoding.UTF8))
-            {
-                // Add header comment
-                outputFile.WriteLine("// Combined C# files from repository: " + repositoryPath);
-                outputFile.WriteLine("// Generated on: " + DateTime.Now.ToString());
-                outputFile.WriteLine();
+                // Write start delimiter
+                outputFile.WriteLine($"// Content start for {relativePath}");
 
-                // Process each file
-                foreach (string filePath in csFiles)
+                // Copy the file content
+                string content = File.ReadAllText(filePath);
+                outputFile.WriteLine(content);
+
+                // If the file doesn't end with a newline, add one
+                if (content.Length > 0 && !content.EndsWith(Environment.NewLine))
                 {
-                    string relativePath = GetRelativePath(filePath, repositoryPath);
-
-                    // Write start delimiter
-                    outputFile.WriteLine($"// Content start for {relativePath}");
-
-                    // Copy the file content
-                    string content = File.ReadAllText(filePath);
-                    outputFile.WriteLine(content);
-
-                    // If the file doesn't end with a newline, add one
-                    if (content.Length > 0 && !content.EndsWith(Environment.NewLine))
-                    {
-                        outputFile.WriteLine();
-                    }
-
-                    // Write end delimiter
-                    outputFile.WriteLine($"// Content end for {relativePath}");
                     outputFile.WriteLine();
                 }
-            }
 
-            Console.WriteLine($"Successfully combined {csFiles.Length} files into '{outputFileName}'");
+                // Write end delimiter
+                outputFile.WriteLine($"// Content end for {relativePath}");
+                outputFile.WriteLine();
+            }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error: {ex.Message}");
-        }
+
+        Console.WriteLine($"Successfully combined {files.Length} files into '{outputFileName}'");
     }
 
     /// <summary>

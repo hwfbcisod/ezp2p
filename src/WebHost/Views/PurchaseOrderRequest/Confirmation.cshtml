@@ -1,0 +1,30 @@
+﻿@{
+    ViewData["Title"] = "Request Confirmation";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h2 class="mb-0">Request Submitted</h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle-fill"></i> Your purchase order request has been submitted successfully!
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Your request will be reviewed shortly. You will be notified when it is processed.
+                    </div>
+
+                    <div class="d-flex justify-content-center mt-4">
+                        <a asp-controller="PurchaseOrderRequest" asp-action="Create" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create New Request
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

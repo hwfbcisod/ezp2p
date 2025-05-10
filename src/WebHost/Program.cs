@@ -1,4 +1,5 @@
 using EasyP2P.Infrastructure;
+using Infrastructure.Sql;
 using Infrastructure.Sql.Interfaces;
 
 namespace WebHost;
@@ -13,13 +14,15 @@ public class Program
             .AddUserSecrets<Program>();
 
         // Add services to the container.
-        builder.Services.AddSingleton<IStateMachineRepository>();
+        builder.Services.AddSingleton<IStateMachineRepository, PostgresStateMachineRepository>();
         builder.Services.AddScoped<IStateMachineManager, StateMachineManager>();
-        builder.Services.AddControllers();
+        builder.Services.AddControllersWithViews();
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
 
         var app = builder.Build();
+
+        app.UseStaticFiles();
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
@@ -29,7 +32,9 @@ public class Program
 
         app.UseAuthorization();
 
-        app.MapControllers();
+        app.MapControllerRoute(
+            name: "default",
+            pattern: "{controller=Home}/{action=Index}/{id?}");
 
         app.Run();
     }
