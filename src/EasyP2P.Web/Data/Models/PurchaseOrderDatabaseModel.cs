@@ -46,6 +46,12 @@ public class PurchaseOrderDatabaseModel
     /// </summary>
     public DateTime OrderDate { get; set; }
 
+# warning FILL THIS OUT AND ADD A DB COL!
+    /// <summary>
+    /// Date when the items are expected to be delivered.
+    /// </summary>
+    public DateTime DeliveryDate { get; set; }
+
     /// <summary>
     /// User who created the purchase order.
     /// </summary>
@@ -55,4 +61,5 @@ public class PurchaseOrderDatabaseModel
     /// Current status of the purchase order.
     /// </summary>
     public string Status { get; set; }
+
 }

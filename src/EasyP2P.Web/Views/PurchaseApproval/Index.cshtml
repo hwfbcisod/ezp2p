@@ -1,5 +1,4 @@
-﻿// Update to Views/PurchaseApproval/Index.cshtml to add Create PO option
-@model IEnumerable<EasyP2P.Web.Models.PurchaseOrderRequestViewModel>
+﻿@model IEnumerable<EasyP2P.Web.Models.PurchaseOrderRequestViewModel>
 
 @{
     ViewData["Title"] = "Purchase Order Requests";
@@ -10,12 +9,6 @@
         <h2>Pending Purchase Order Requests</h2>
         <div>
             <a asp-action="All" class="btn btn-outline-secondary me-2">View All Requests</a>
-            <form asp-action="AddSample" method="post" style="display: inline;">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-outline-primary">
-                    Add Sample POR
-                </button>
-            </form>
         </div>
     </div>
 
@@ -99,7 +92,7 @@
             else
             {
                 <div class="alert alert-info">
-                    No pending purchase order requests found. Click "Add Sample POR" to create a test request.
+                    No pending purchase order requests found.
                 </div>
             }
         </div>

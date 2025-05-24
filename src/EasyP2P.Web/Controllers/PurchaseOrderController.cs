@@ -1,6 +1,11 @@
 ﻿// Controllers/PurchaseOrderController.cs
 using EasyP2P.Web.Data.Repositories.Interfaces;
 using EasyP2P.Web.Models;
+using iText.Kernel.Colors;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.Layout.Properties;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EasyP2P.Web.Controllers;
@@ -38,6 +43,138 @@ public class PurchaseOrderController : Controller
         }
 
         return View(order);
+    }
+
+    // GET: PurchaseOrder/ExportPdf/5
+    public async Task<IActionResult> ExportPdf(int id)
+    {
+        var order = await _purchaseOrderRepository.GetByIdAsync(id);
+        if (order == null)
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            // Create a memory stream to write the PDF to
+            var memoryStream = new MemoryStream();
+
+            // Configure writer properties to avoid BouncyCastle dependency issues
+            var writerProperties = new iText.Kernel.Pdf.WriterProperties();
+
+            // Create a PDF writer and document
+            var writer = new PdfWriter(memoryStream, writerProperties);
+            var pdf = new PdfDocument(writer);
+            var document = new Document(pdf);
+
+            // Set document margins
+            document.SetMargins(36, 36, 36, 36);
+
+            // Add title
+            var title = new Paragraph($"Purchase Order #{order.Id}")
+                .SetFontSize(20)
+                .SimulateBold()
+                .SetTextAlignment(TextAlignment.CENTER);
+            document.Add(title);
+
+            // Add company header
+            var companyInfo = new Paragraph("EasyP2P Company")
+                .SetFontSize(14)
+                .SetTextAlignment(TextAlignment.CENTER);
+            document.Add(companyInfo);
+
+            // Add date
+            var date = new Paragraph($"Date: {DateTime.Now:yyyy-MM-dd}")
+                .SetTextAlignment(TextAlignment.RIGHT);
+            document.Add(date);
+
+            // Add space
+            document.Add(new Paragraph("\n"));
+
+            // Add order and request info
+            document.Add(new Paragraph($"PO #: {order.Id}")
+                .   SimulateBold());
+            document.Add(new Paragraph($"POR #: {order.PurchaseOrderRequestId}"));
+            document.Add(new Paragraph($"Status: {order.Status}"));
+            document.Add(new Paragraph($"Created by: {order.CreatedBy}"));
+            document.Add(new Paragraph($"Order date: {order.OrderDate:yyyy-MM-dd}"));
+            document.Add(new Paragraph($"Supplier: {order.Supplier}")
+                .SimulateBold());
+
+            // Add space
+            document.Add(new Paragraph("\n"));
+
+            // Create table for item details
+            var table = new Table(4)
+                .UseAllAvailableWidth()
+                .SetBorder(new iText.Layout.Borders.SolidBorder(1));
+
+            // Add table headers with background color
+            var headerCells = new[]
+            {
+                new Cell().Add(new Paragraph("Item").SimulateBold()),
+                new Cell().Add(new Paragraph("Quantity").SimulateBold()),
+                new Cell().Add(new Paragraph("Unit Price").SimulateBold()),
+                new Cell().Add(new Paragraph("Total Price").SimulateBold())
+            };
+
+            foreach (var headerCell in headerCells)
+            {
+                headerCell.SetBackgroundColor(ColorConstants.LIGHT_GRAY);
+                table.AddHeaderCell(headerCell);
+            }
+
+            // Add table data
+            table.AddCell(order.ItemName);
+            table.AddCell(order.Quantity.ToString());
+            table.AddCell($"{order.UnitPrice:C}");
+            table.AddCell($"{order.TotalPrice:C}");
+
+            // Add the table to the document
+            document.Add(table);
+
+            // Add space
+            document.Add(new Paragraph("\n"));
+
+            // Add total
+            var total = new Paragraph($"Total: {order.TotalPrice:C}")
+                .SetTextAlignment(TextAlignment.RIGHT)
+                .SimulateBold()
+                .SetFontSize(14);
+            document.Add(total);
+
+            // Add footer
+            //var footer = new Paragraph("Thank you for your purchase!")
+            //    .SetFontSize(10)
+            //    .SetTextAlignment(TextAlignment.CENTER)
+            //    .SimulateItalic();
+            //document.Add(footer);
+
+            // Add legal note
+            var legalNote = new Paragraph("This is an automatically generated document. " +
+                                         "Please contact accounting@easyp2p.com for any questions.")
+                .SetFontSize(8)
+                .SetTextAlignment(TextAlignment.CENTER);
+            document.Add(legalNote);
+
+            // Close the document before accessing the stream
+            document.Close();
+            pdf.Close();
+            writer.Close();
+
+            // Get the PDF bytes
+            var pdfBytes = memoryStream.ToArray();
+            memoryStream.Close();
+
+            // Return the PDF as a file download
+            return File(pdfBytes, "application/pdf", $"PurchaseOrder-{order.Id}.pdf");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating PDF for purchase order {OrderId}", id);
+            TempData["ErrorMessage"] = "An error occurred while generating the PDF. Please try again.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
     }
 
     // GET: PurchaseOrder/Create/5 (where 5 is the purchase order request ID)
