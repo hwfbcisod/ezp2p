@@ -1,8 +1,681 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model EasyP2P.Web.Models.DashboardViewModel
+
+@{
+    ViewData["Title"] = "EasyP2P Dashboard";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container-fluid py-4">
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient-primary text-white shadow-lg">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-2">Welcome to EasyP2P Dashboard</h2>
+                            <p class="mb-0 lead">Your comprehensive procurement management overview</p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <div class="dashboard-time">
+                                <i class="bi bi-clock me-2"></i>
+                                <span id="currentTime"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Critical Alerts (excluding urgent approvals) -->
+    @if (Model.Alerts.Any(a => a.Type != "urgent"))
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert-container">
+                    @foreach (var alert in Model.Alerts.Where(a => a.Type != "urgent"))
+                    {
+                        <div class="alert alert-@(alert.Type == "warning" ? "warning" : "info") alert-dismissible fade show dashboard-alert" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-@(alert.Type == "warning" ? "exclamation-circle" : "info-circle") me-3 fs-4"></i>
+                                <div class="flex-grow-1">
+                                    <h6 class="alert-heading mb-1">@alert.Title</h6>
+                                    <p class="mb-0">@alert.Message</p>
+                                </div>
+                                @if (!string.IsNullOrEmpty(alert.ActionUrl))
+                                {
+                                    <a href="@alert.ActionUrl" class="btn btn-sm btn-outline-dark me-3">@alert.ActionText</a>
+                                }
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Key Metrics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <a href="/PurchaseOrderRequest" class="text-decoration-none">
+                <div class="card metric-card h-100 border-0 shadow-sm clickable-metric">
+                    <div class="card-body text-center">
+                        <div class="metric-icon bg-primary text-white rounded-circle mx-auto mb-3">
+                            <i class="bi bi-file-text fs-1"></i>
+                        </div>
+                        <h3 class="metric-value text-primary">@Model.Metrics.TotalRequests</h3>
+                        <p class="metric-label text-muted mb-0">Purchase Requests</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="/PurchaseOrder" class="text-decoration-none">
+                <div class="card metric-card h-100 border-0 shadow-sm clickable-metric">
+                    <div class="card-body text-center">
+                        <div class="metric-icon bg-success text-white rounded-circle mx-auto mb-3">
+                            <i class="bi bi-check-circle fs-1"></i>
+                        </div>
+                        <h3 class="metric-value text-success">@Model.Metrics.TotalOrders</h3>
+                        <p class="metric-label text-muted mb-0">Purchase Orders</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="/PurchaseOrderRequest?status=PendingApproval" class="text-decoration-none">
+                <div class="card metric-card h-100 border-0 shadow-sm clickable-metric">
+                    <div class="card-body text-center">
+                        <div class="metric-icon bg-warning text-white rounded-circle mx-auto mb-3">
+                            <i class="bi bi-clock fs-1"></i>
+                        </div>
+                        <h3 class="metric-value text-warning">@Model.Metrics.PendingApprovals</h3>
+                        <p class="metric-label text-muted mb-0">Pending Approvals</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="/PurchaseOrderRequest?priority=Urgent" class="text-decoration-none">
+                <div class="card metric-card h-100 border-0 shadow-sm clickable-metric">
+                    <div class="card-body text-center">
+                        <div class="metric-icon bg-danger text-white rounded-circle mx-auto mb-3">
+                            <i class="bi bi-exclamation-triangle fs-1"></i>
+                        </div>
+                        <h3 class="metric-value text-danger">@Model.Metrics.UrgentItems</h3>
+                        <p class="metric-label text-muted mb-0">Urgent Items</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Secondary Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-light rounded me-3">
+                            <i class="bi bi-calendar-month text-primary"></i>
+                        </div>
+                        <div>
+                            <h6 class="stat-value mb-1">@Model.Metrics.CompletedThisMonth</h6>
+                            <small class="text-muted">Completed This Month</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-light rounded me-3">
+                            <i class="bi bi-currency-dollar text-success"></i>
+                        </div>
+                        <div>
+                            <h6 class="stat-value mb-1">@Model.Metrics.TotalValueThisMonth.ToString("C0")</h6>
+                            <small class="text-muted">Total Value This Month</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-light rounded me-3">
+                            <i class="bi bi-percent text-info"></i>
+                        </div>
+                        <div>
+                            <h6 class="stat-value mb-1">@Model.Metrics.ApprovalRate%</h6>
+                            <small class="text-muted">Approval Rate</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-light rounded me-3">
+                            <i class="bi bi-stopwatch text-warning"></i>
+                        </div>
+                        <div>
+                            <h6 class="stat-value mb-1">@Model.Metrics.AverageProcessingDays days</h6>
+                            <small class="text-muted">Avg. Processing Time</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three Sections Row -->
+    <div class="row mb-4">
+        <!-- Pending Approvals -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-clock me-2 text-warning"></i>
+                            Pending Approvals
+                        </h6>
+                        @if (Model.PendingApprovals.Any())
+                        {
+                            <span class="badge bg-warning">@Model.PendingApprovals.Count</span>
+                        }
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.PendingApprovals.Any())
+                    {
+                        <div class="approval-list">
+                            @foreach (var item in Model.PendingApprovals.Take(5))
+                            {
+                                <div class="approval-item border-bottom pb-3 mb-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">
+                                                <a href="@item.DetailUrl" class="text-decoration-none">
+                                                    @item.Type #@item.Id
+                                                </a>
+                                            </h6>
+                                            <p class="text-muted small mb-1">@item.ItemName</p>
+                                            @if (item.Value.HasValue)
+                                            {
+                                                <small class="text-success fw-bold">@item.Value.Value.ToString("C")</small>
+                                            }
+                                        </div>
+                                        <div class="text-end">
+                                            @if (!string.IsNullOrEmpty(item.Priority))
+                                            {
+                                                <span class="badge bg-@(item.Priority == "Urgent" ? "danger" : item.Priority == "High" ? "warning" : "secondary") mb-1">@item.Priority</span>
+                                            }
+                                            <br>
+                                            <small class="text-muted">@item.DaysWaiting days</small>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-1">
+                                        @if (item.Type == "POR")
+                                        {
+                                            <form asp-controller="PurchaseOrderRequest" asp-action="Approve" asp-route-id="@item.Id" method="post" class="flex-fill">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-success btn-sm w-100" onclick="return confirm('Approve this request?')">
+                                                    <i class="bi bi-check"></i> Approve
+                                                </button>
+                                            </form>
+                                            <form asp-controller="PurchaseOrderRequest" asp-action="Reject" asp-route-id="@item.Id" method="post" class="flex-fill">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Reject this request?')">
+                                                    <i class="bi bi-x"></i> Reject
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <form asp-controller="PurchaseOrder" asp-action="Approve" asp-route-id="@item.Id" method="post" class="flex-fill">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-success btn-sm w-100" onclick="return confirm('Approve this order?')">
+                                                    <i class="bi bi-check"></i> Approve
+                                                </button>
+                                            </form>
+                                            <form asp-controller="PurchaseOrder" asp-action="Reject" asp-route-id="@item.Id" method="post" class="flex-fill">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('Reject this order?')">
+                                                    <i class="bi bi-x"></i> Reject
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        @if (Model.PendingApprovals.Count > 5)
+                        {
+                            <div class="text-center">
+                                <a href="/PurchaseOrderRequest?filter=pending" class="btn btn-outline-primary btn-sm">
+                                    View All (@Model.PendingApprovals.Count)
+                                </a>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-check-circle fs-1 mb-2 d-block"></i>
+                            <p class="mb-0">No pending approvals</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-activity me-2 text-info"></i>
+                        Recent Activity
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.RecentActivity.Any())
+                    {
+                        <div class="activity-timeline">
+                            @foreach (var activity in Model.RecentActivity.Take(8))
+                            {
+                                <div class="activity-item d-flex mb-3">
+                                    <div class="activity-icon me-3">
+                                        <i class="bi bi-@(activity.Type == "POR" ? "file-plus" : "file-check") text-primary"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    <a href="@activity.DetailUrl" class="text-decoration-none">
+                                                        @activity.Type #@activity.Id
+                                                    </a>
+                                                </h6>
+                                                <p class="text-muted small mb-1">@activity.ItemName</p>
+                                                <small class="text-success">@activity.Action</small>
+                                            </div>
+                                            <small class="text-muted">@activity.Timestamp.ToString("MM/dd HH:mm")</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-clock fs-1 mb-2 d-block"></i>
+                            <p class="mb-0">No recent activity</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Department Overview -->
+        <div class="col-lg-4 mb-4">
+            @if (Model.DepartmentSummaries.Any())
+            {
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-0">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-building me-2 text-primary"></i>
+                            Department Overview
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var dept in Model.DepartmentSummaries)
+                        {
+                            <div class="department-item mb-3 p-3 border rounded">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0">@dept.Department</h6>
+                                    <span class="badge bg-primary">@dept.TotalValue.ToString("C0")</span>
+                                </div>
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">Requests</small>
+                                        <strong>@dept.ActiveRequests</strong>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">Orders</small>
+                                        <strong>@dept.ActiveOrders</strong>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted d-block">Top Item</small>
+                                        <strong class="small">@(dept.TopItem.Length > 10 ? dept.TopItem.Substring(0, 10) + "..." : dept.TopItem)</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-0">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-building me-2 text-primary"></i>
+                            Department Overview
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-building fs-1 mb-2 d-block"></i>
+                            <p class="mb-0">No department data</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Request Trends Chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-graph-up me-2 text-primary"></i>
+                        Request Trends (Last 30 Days)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="requestTrendsChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Breakdown -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-pie-chart me-2 text-primary"></i>
+                        Request Status Breakdown
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusBreakdownChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up-arrow me-2 text-success"></i>
+                        Financial Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="financial-metric">
+                                <h4 class="text-success mb-1">@Model.Financial.TotalOrderedThisMonth.ToString("C0")</h4>
+                                <small class="text-muted">Total Ordered This Month</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="financial-metric">
+                                <h4 class="text-info mb-1">@Model.Financial.AverageOrderValue.ToString("C0")</h4>
+                                <small class="text-muted">Average Order Value</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="financial-metric">
+                                <h4 class="text-warning mb-1">@Model.Financial.OrdersAwaitingPayment</h4>
+                                <small class="text-muted">Orders Awaiting Payment</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="financial-metric">
+                                <h4 class="text-primary mb-1">@Model.Financial.LargestOrder.ToString("C0")</h4>
+                                <small class="text-muted">Largest Order</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+
+    .clickable-metric {
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+
+        .clickable-metric:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+            .clickable-metric:hover .metric-value {
+                transform: scale(1.05);
+            }
+
+    .metric-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+    .metric-icon {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .metric-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .stat-card {
+        transition: transform 0.2s ease-in-out;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .dashboard-alert {
+        border-left: 4px solid;
+        border-radius: 0.5rem;
+    }
+
+    .alert-danger {
+        border-left-color: #dc3545;
+    }
+
+    .alert-warning {
+        border-left-color: #ffc107;
+    }
+
+    .alert-info {
+        border-left-color: #0dcaf0;
+    }
+
+    .approval-item:last-child {
+        border-bottom: none !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    .activity-timeline {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .activity-icon {
+        width: 30px;
+        text-align: center;
+    }
+
+    .department-item {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef !important;
+    }
+
+    .financial-metric h4 {
+        font-weight: 700;
+    }
+
+    .dashboard-time {
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+
+    .card {
+        border-radius: 0.75rem;
+    }
+
+    .card-header {
+        border-radius: 0.75rem 0.75rem 0 0 !important;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            document.getElementById('currentTime').textContent = timeString;
+        }
+
+        updateTime();
+        setInterval(updateTime, 60000); // Update every minute
+
+        // Request Trends Chart
+        const trendsCtx = document.getElementById('requestTrendsChart').getContext('2d');
+        const trendsData = @Html.Raw(Json.Serialize(Model.RequestTrends));
+
+        new Chart(trendsCtx, {
+            type: 'line',
+            data: {
+                labels: trendsData.map(d => d.date),
+                datasets: [{
+                    label: 'Requests',
+                    data: trendsData.map(d => d.requests),
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }, {
+                    label: 'Approvals',
+                    data: trendsData.map(d => d.approvals),
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+
+        // Status Breakdown Chart
+        const statusCtx = document.getElementById('statusBreakdownChart').getContext('2d');
+        const statusData = @Html.Raw(Json.Serialize(Model.RequestStatusBreakdown));
+
+        if (statusData.length > 0) {
+            new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: statusData.map(s => s.status),
+                    datasets: [{
+                        data: statusData.map(s => s.count),
+                        backgroundColor: [
+                            '#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d', '#17a2b8'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        }
+                    }
+                }
+            });
+        }
+
+        // Auto-refresh dashboard every 5 minutes
+        setTimeout(() => {
+            window.location.reload();
+        }, 300000);
+    });
+</script>

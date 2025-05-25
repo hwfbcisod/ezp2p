@@ -17,6 +17,7 @@ public class Program
         builder.Services.AddScoped<IPurchaseOrderRepository, PostgresPurchaseOrderRepository>();
         builder.Services.AddScoped<IPurchaseOrderRequestService, PurchaseOrderRequestService>();
         builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
+        builder.Services.AddScoped<IDashboardService, DashboardService>();
         builder.Services.AddMemoryCache();
         builder.Services.AddLogging(builder => {
             builder.AddConsole();

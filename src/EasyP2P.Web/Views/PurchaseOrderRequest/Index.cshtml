@@ -1,18 +1,15 @@
 ﻿@model IEnumerable<EasyP2P.Web.Models.PurchaseOrderRequestViewModel>
 
 @{
-    ViewData["Title"] = "All Purchase Order Requests";
+    ViewData["Title"] = "Purchase Order Requests";
 }
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>All Purchase Order Requests</h2>
+        <h2>Purchase Order Requests</h2>
         <div>
-            <a asp-action="Index" class="btn btn-outline-warning me-2">
-                <i class="bi bi-clock"></i> Pending Requests
-            </a>
             <a asp-action="Create" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> New Request
+                <i class="bi bi-plus-circle"></i> New Purchase Request
             </a>
             <form asp-action="AddSample" method="post" style="display: inline;">
                 @Html.AntiForgeryToken()
@@ -29,50 +26,62 @@
             var statusGroups = Model.GroupBy(x => x.Status).ToDictionary(g => g.Key, g => g.Count());
         }
         <div class="col-md-2">
-            <div class="card text-center">
+            <div class="card text-center status-card clickable-card" data-status="PendingApproval" role="button" tabindex="0">
                 <div class="card-body">
                     <h5 class="card-title text-warning">@(statusGroups.GetValueOrDefault("PendingApproval", 0))</h5>
-                    <p class="card-text">Pending</p>
+                    <p class="card-text">
+                        <i class="bi bi-clock"></i> Pending
+                    </p>
                 </div>
             </div>
         </div>
         <div class="col-md-2">
-            <div class="card text-center">
+            <div class="card text-center status-card clickable-card" data-status="Approved" role="button" tabindex="0">
                 <div class="card-body">
                     <h5 class="card-title text-success">@(statusGroups.GetValueOrDefault("Approved", 0))</h5>
-                    <p class="card-text">Approved</p>
+                    <p class="card-text">
+                        <i class="bi bi-check-circle"></i> Approved
+                    </p>
                 </div>
             </div>
         </div>
         <div class="col-md-2">
-            <div class="card text-center">
+            <div class="card text-center status-card clickable-card" data-status="Rejected" role="button" tabindex="0">
                 <div class="card-body">
                     <h5 class="card-title text-danger">@(statusGroups.GetValueOrDefault("Rejected", 0))</h5>
-                    <p class="card-text">Rejected</p>
+                    <p class="card-text">
+                        <i class="bi bi-x-circle"></i> Rejected
+                    </p>
                 </div>
             </div>
         </div>
         <div class="col-md-2">
-            <div class="card text-center">
+            <div class="card text-center status-card clickable-card" data-status="PurchaseOrderCreated" role="button" tabindex="0">
                 <div class="card-body">
                     <h5 class="card-title text-info">@(statusGroups.GetValueOrDefault("PurchaseOrderCreated", 0))</h5>
-                    <p class="card-text">PO Created</p>
+                    <p class="card-text">
+                        <i class="bi bi-file-text"></i> PO Created
+                    </p>
                 </div>
             </div>
         </div>
         <div class="col-md-2">
-            <div class="card text-center">
+            <div class="card text-center status-card clickable-card" data-status="Cancelled" role="button" tabindex="0">
                 <div class="card-body">
                     <h5 class="card-title text-dark">@(statusGroups.GetValueOrDefault("Cancelled", 0))</h5>
-                    <p class="card-text">Cancelled</p>
+                    <p class="card-text">
+                        <i class="bi bi-dash-circle"></i> Cancelled
+                    </p>
                 </div>
             </div>
         </div>
         <div class="col-md-2">
-            <div class="card text-center border-primary">
-                <div class="card-body">
+            <div class="card text-center status-card clickable-card" data-status="" role="button" tabindex="0">
+                <div class="card-body border-primary">
                     <h5 class="card-title text-primary">@Model.Count()</h5>
-                    <p class="card-text">Total</p>
+                    <p class="card-text">
+                        <i class="bi bi-list-ul"></i> Total
+                    </p>
                 </div>
             </div>
         </div>
@@ -82,8 +91,11 @@
     <div class="card mb-3">
         <div class="card-header">
             <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#filtersCollapse" aria-expanded="false">
+                    data-bs-target="#filtersCollapse" aria-expanded="false" id="filtersToggleBtn">
                 <i class="bi bi-funnel"></i> Filters
+            </button>
+            <button class="btn btn-outline-danger btn-sm ms-2" id="clearFiltersBtn" style="display: none;">
+                <i class="bi bi-x-circle"></i> Clear Filters
             </button>
         </div>
         <div class="collapse" id="filtersCollapse">
@@ -255,6 +267,78 @@
         const totalCount = tableRows.length;
         const filteredBadge = document.getElementById('filteredBadge');
         const totalCountSpan = document.getElementById('totalCount');
+        const filtersCollapse = document.getElementById('filtersCollapse');
+        const filtersToggleBtn = document.getElementById('filtersToggleBtn');
+        const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+        const statusCards = document.querySelectorAll('.status-card');
+
+        // Bootstrap collapse instance for programmatic control
+        const bsCollapse = new bootstrap.Collapse(filtersCollapse, { toggle: false });
+
+        // Status card click handlers
+        statusCards.forEach(card => {
+            card.addEventListener('click', function() {
+                handleStatusCardClick(this);
+            });
+
+            // Handle keyboard navigation
+            card.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleStatusCardClick(this);
+                }
+            });
+        });
+
+        function handleStatusCardClick(card) {
+            const status = card.dataset.status;
+
+            // Remove active state from all cards
+            statusCards.forEach(c => c.classList.remove('active-status-card'));
+
+            // Add active state to clicked card
+            card.classList.add('active-status-card');
+
+            // Expand filters section
+            bsCollapse.show();
+
+            // Set status filter
+            document.getElementById('statusFilter').value = status;
+
+            // Clear other filters
+            document.getElementById('priorityFilter').value = '';
+            document.getElementById('departmentFilter').value = '';
+            document.getElementById('itemFilter').value = '';
+
+            // Apply filters
+            applyFilters();
+
+            // Show clear filters button
+            clearFiltersBtn.style.display = 'inline-block';
+
+            // Update toggle button text
+            filtersToggleBtn.innerHTML = '<i class="bi bi-funnel-fill"></i> Filters (Active)';
+        }
+
+        // Clear filters button
+        clearFiltersBtn.addEventListener('click', function() {
+            // Clear all filters
+            filterInputs.forEach(input => {
+                input.value = '';
+            });
+
+            // Remove active state from all status cards
+            statusCards.forEach(card => card.classList.remove('active-status-card'));
+
+            // Apply filters (which will show all)
+            applyFilters();
+
+            // Hide clear filters button
+            this.style.display = 'none';
+
+            // Update toggle button text
+            filtersToggleBtn.innerHTML = '<i class="bi bi-funnel"></i> Filters';
+        });
 
         function applyFilters() {
             const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
@@ -290,15 +374,37 @@
             if (hasActiveFilters) {
                 filteredBadge.style.display = 'inline-block';
                 totalCountSpan.textContent = visibleCount;
+                clearFiltersBtn.style.display = 'inline-block';
+                filtersToggleBtn.innerHTML = '<i class="bi bi-funnel-fill"></i> Filters (Active)';
             } else {
                 filteredBadge.style.display = 'none';
                 totalCountSpan.textContent = totalCount;
+                clearFiltersBtn.style.display = 'none';
+                filtersToggleBtn.innerHTML = '<i class="bi bi-funnel"></i> Filters';
             }
         }
 
+        // Apply filters when inputs change
         filterInputs.forEach(input => {
             input.addEventListener('input', applyFilters);
             input.addEventListener('change', applyFilters);
+        });
+
+        // Listen for filters collapse events to update button text
+        filtersCollapse.addEventListener('shown.bs.collapse', function() {
+            const hasActiveFilters = Array.from(filterInputs).some(input => input.value.trim() !== '');
+            if (!hasActiveFilters) {
+                filtersToggleBtn.innerHTML = '<i class="bi bi-funnel"></i> Filters (Open)';
+            }
+        });
+
+        filtersCollapse.addEventListener('hidden.bs.collapse', function() {
+            const hasActiveFilters = Array.from(filterInputs).some(input => input.value.trim() !== '');
+            if (hasActiveFilters) {
+                filtersToggleBtn.innerHTML = '<i class="bi bi-funnel-fill"></i> Filters (Active)';
+            } else {
+                filtersToggleBtn.innerHTML = '<i class="bi bi-funnel"></i> Filters';
+            }
         });
     });
 </script>
@@ -317,6 +423,31 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
+    .clickable-card {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+    }
+
+        .clickable-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            border-color: #0d6efd;
+        }
+
+        .clickable-card:focus {
+            outline: none;
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+    .active-status-card {
+        border-color: #0d6efd !important;
+        background-color: #f8f9fa;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+    }
+
     .badge {
         font-size: 0.75em;
     }
@@ -329,4 +460,19 @@
             border-color: #86b7fe;
             box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
         }
+
+    .status-card .card-title {
+        font-weight: bold;
+        font-size: 1.5rem;
+    }
+
+    .status-card .card-text {
+        font-weight: 500;
+        margin-bottom: 0;
+    }
+
+    .status-card:hover .card-title {
+        transform: scale(1.05);
+        transition: transform 0.2s ease;
+    }
 </style>

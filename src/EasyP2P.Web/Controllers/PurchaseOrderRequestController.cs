@@ -1,7 +1,4 @@
-﻿using EasyP2P.Web.Data.Repositories.Interfaces;
-using EasyP2P.Web.Enums;
-using EasyP2P.Web.Extensions;
-using EasyP2P.Web.Models;
+﻿using EasyP2P.Web.Models;
 using EasyP2P.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,8 +19,7 @@ public class PurchaseOrderRequestController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var pendingRequests = await _purchaseOrderRequestService.GetRequestsByStatusAsync(
-            Enums.PurchaseOrderRequestState.PendingApproval);
+        var pendingRequests = await _purchaseOrderRequestService.GetAllRequestsAsync();
 
         return View(pendingRequests);
     }
