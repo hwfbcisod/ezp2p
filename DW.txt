@@ -1,8 +1,0 @@
-I'm developing this project in my personal free time and SOMETIMES during company time.
-Both me and the company have a shared interest in this.
-I'll increase my core competencies in business process automation as well as my skils as a developer from both of which the company greatly benefits
-On the other hand, I'll get my Master's Degree from UTP.
-I'll present my work to the company internally and will keep it private up until I'm employed by it.
-I will volunteer to implement any idea coming from the project into DocuWare's system if management likes it.
-I reserve the right to make the GitHub repository public if I leave the company at some point in order to improve my job prospects
-I will use SOME companies resources occasionally (Visual Studio, company laptop, company internet), but will NOT use any production code at any point whatsoever!
