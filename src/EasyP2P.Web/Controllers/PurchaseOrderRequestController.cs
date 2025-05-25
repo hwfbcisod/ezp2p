@@ -1,5 +1,6 @@
 ﻿using EasyP2P.Web.Data.Repositories.Interfaces;
 using EasyP2P.Web.Enums;
+using EasyP2P.Web.Extensions;
 using EasyP2P.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,18 +21,18 @@ public class PurchaseOrderRequestController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var pendingRequests = await _purchaseOrderRequestRepository.GetByStatusAsync("PendingApproval");
-        // Also get "Pending" status for backward compatibility
-        var pendingLegacy = await _purchaseOrderRequestRepository.GetByStatusAsync("Pending");
+        var pendingRequests = await _purchaseOrderRequestRepository.GetByStatusAsync(PurchaseOrderRequestState.PendingApproval);
+        var viewModels = pendingRequests.ToViewModels();
 
-        var allPending = pendingRequests.Concat(pendingLegacy).DistinctBy(x => x.Id);
-        return View(allPending);
+        return View(viewModels);
     }
 
     public async Task<IActionResult> All()
     {
         var allRequests = await _purchaseOrderRequestRepository.GetAllAsync();
-        return View(allRequests);
+        var viewModels = allRequests.ToViewModels();
+
+        return View(viewModels);
     }
 
     public async Task<IActionResult> Details(int id)
@@ -41,7 +42,9 @@ public class PurchaseOrderRequestController : Controller
         {
             return NotFound();
         }
-        return View(request);
+
+        var viewModel = request.ToViewModel();
+        return View(viewModel);
     }
 
     public IActionResult Create()

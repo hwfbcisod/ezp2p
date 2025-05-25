@@ -1,6 +1,7 @@
 ﻿using EasyP2P.Web.Data.Repositories.Interfaces;
 using EasyP2P.Web.Enums;
 using EasyP2P.Web.Models;
+using EasyP2P.Web.Models.Database;
 using Npgsql;
 using System.Data;
 
@@ -18,9 +19,9 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
         _logger = logger;
     }
 
-    public async Task<IEnumerable<PurchaseOrderViewModel>> GetAllAsync()
+    public async Task<IEnumerable<PurchaseOrderDatabaseModel>> GetAllAsync()
     {
-        var orders = new List<PurchaseOrderViewModel>();
+        var orders = new List<PurchaseOrderDatabaseModel>();
 
         try
         {
@@ -37,7 +38,7 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
                     {
                         while (await reader.ReadAsync())
                         {
-                            orders.Add(MapToViewModel(reader));
+                            orders.Add(MapToDatabaseModel(reader));
                         }
                     }
                 }
@@ -52,9 +53,9 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
         return orders;
     }
 
-    public async Task<IEnumerable<PurchaseOrderViewModel>> GetByStatusAsync(PurchaseOrderState status)
+    public async Task<IEnumerable<PurchaseOrderDatabaseModel>> GetByStatusAsync(PurchaseOrderState status)
     {
-        var orders = new List<PurchaseOrderViewModel>();
+        var orders = new List<PurchaseOrderDatabaseModel>();
 
         try
         {
@@ -74,7 +75,7 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
                     {
                         while (await reader.ReadAsync())
                         {
-                            orders.Add(MapToViewModel(reader));
+                            orders.Add(MapToDatabaseModel(reader));
                         }
                     }
                 }
@@ -89,7 +90,7 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
         return orders;
     }
 
-    public async Task<PurchaseOrderViewModel?> GetByIdAsync(int id)
+    public async Task<PurchaseOrderDatabaseModel?> GetByIdAsync(int id)
     {
         try
         {
@@ -109,7 +110,7 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
                     {
                         if (await reader.ReadAsync())
                         {
-                            return MapToViewModel(reader);
+                            return MapToDatabaseModel(reader);
                         }
                     }
                 }
@@ -124,9 +125,9 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
         return null;
     }
 
-    public async Task<IEnumerable<PurchaseOrderViewModel>> GetByRequestIdAsync(int requestId)
+    public async Task<IEnumerable<PurchaseOrderDatabaseModel>> GetByRequestIdAsync(int requestId)
     {
-        var orders = new List<PurchaseOrderViewModel>();
+        var orders = new List<PurchaseOrderDatabaseModel>();
 
         try
         {
@@ -146,7 +147,7 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
                     {
                         while (await reader.ReadAsync())
                         {
-                            orders.Add(MapToViewModel(reader));
+                            orders.Add(MapToDatabaseModel(reader));
                         }
                     }
                 }
@@ -253,9 +254,9 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
         }
     }
 
-    private PurchaseOrderViewModel MapToViewModel(NpgsqlDataReader reader)
+    private PurchaseOrderDatabaseModel MapToDatabaseModel(NpgsqlDataReader reader)
     {
-        return new PurchaseOrderViewModel
+        return new PurchaseOrderDatabaseModel
         {
             Id = reader.GetInt32("id"),
             PurchaseOrderRequestId = reader.GetInt32("purchase_order_request_id"),
@@ -265,6 +266,7 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
             TotalPrice = reader.GetDecimal("total_price"),
             Supplier = reader.GetString("supplier"),
             OrderDate = reader.GetDateTime("order_date"),
+            DeliveryDate = DateTime.MinValue, // TODO: Add this column to database
             CreatedBy = reader.GetString("created_by"),
             Status = reader.GetString("status")
         };

@@ -1,6 +1,7 @@
 ﻿// Controllers/PurchaseOrderController.cs
 using EasyP2P.Web.Data.Repositories.Interfaces;
 using EasyP2P.Web.Enums;
+using EasyP2P.Web.Extensions;
 using EasyP2P.Web.Models;
 using iText.Kernel.Colors;
 using iText.Kernel.Pdf;
@@ -31,7 +32,9 @@ public class PurchaseOrderController : Controller
     public async Task<IActionResult> Index()
     {
         var orders = await _purchaseOrderRepository.GetAllAsync();
-        return View(orders);
+        var viewModels = orders.ToViewModels();
+
+        return View(viewModels);
     }
 
     // GET: PurchaseOrder/Details/5
@@ -43,7 +46,8 @@ public class PurchaseOrderController : Controller
             return NotFound();
         }
 
-        return View(order);
+        var viewModel = order.ToViewModel();
+        return View(viewModel);
     }
 
     // GET: PurchaseOrder/ExportPdf/5
@@ -54,6 +58,8 @@ public class PurchaseOrderController : Controller
         {
             return NotFound();
         }
+
+        var viewModel = order.ToViewModel();
 
         try
         {
@@ -72,7 +78,7 @@ public class PurchaseOrderController : Controller
             document.SetMargins(36, 36, 36, 36);
 
             // Add title
-            var title = new Paragraph($"Purchase Order #{order.Id}")
+            var title = new Paragraph($"Purchase Order #{viewModel.Id}")
                 .SetFontSize(20)
                 .SimulateBold()
                 .SetTextAlignment(TextAlignment.CENTER);
@@ -93,13 +99,13 @@ public class PurchaseOrderController : Controller
             document.Add(new Paragraph("\n"));
 
             // Add order and request info
-            document.Add(new Paragraph($"PO #: {order.Id}")
-                .   SimulateBold());
-            document.Add(new Paragraph($"POR #: {order.PurchaseOrderRequestId}"));
-            document.Add(new Paragraph($"Status: {order.Status}"));
-            document.Add(new Paragraph($"Created by: {order.CreatedBy}"));
-            document.Add(new Paragraph($"Order date: {order.OrderDate:yyyy-MM-dd}"));
-            document.Add(new Paragraph($"Supplier: {order.Supplier}")
+            document.Add(new Paragraph($"PO #: {viewModel.Id}")
+                .SimulateBold());
+            document.Add(new Paragraph($"POR #: {viewModel.PurchaseOrderRequestId}"));
+            document.Add(new Paragraph($"Status: {viewModel.Status}"));
+            document.Add(new Paragraph($"Created by: {viewModel.CreatedBy}"));
+            document.Add(new Paragraph($"Order date: {viewModel.OrderDate:yyyy-MM-dd}"));
+            document.Add(new Paragraph($"Supplier: {viewModel.Supplier}")
                 .SimulateBold());
 
             // Add space
@@ -126,10 +132,10 @@ public class PurchaseOrderController : Controller
             }
 
             // Add table data
-            table.AddCell(order.ItemName);
-            table.AddCell(order.Quantity.ToString());
-            table.AddCell($"{order.UnitPrice:C}");
-            table.AddCell($"{order.TotalPrice:C}");
+            table.AddCell(viewModel.ItemName);
+            table.AddCell(viewModel.Quantity.ToString());
+            table.AddCell($"{viewModel.UnitPrice:C}");
+            table.AddCell($"{viewModel.TotalPrice:C}");
 
             // Add the table to the document
             document.Add(table);
@@ -138,18 +144,11 @@ public class PurchaseOrderController : Controller
             document.Add(new Paragraph("\n"));
 
             // Add total
-            var total = new Paragraph($"Total: {order.TotalPrice:C}")
+            var total = new Paragraph($"Total: {viewModel.TotalPrice:C}")
                 .SetTextAlignment(TextAlignment.RIGHT)
                 .SimulateBold()
                 .SetFontSize(14);
             document.Add(total);
-
-            // Add footer
-            //var footer = new Paragraph("Thank you for your purchase!")
-            //    .SetFontSize(10)
-            //    .SetTextAlignment(TextAlignment.CENTER)
-            //    .SimulateItalic();
-            //document.Add(footer);
 
             // Add legal note
             var legalNote = new Paragraph("This is an automatically generated document. " +
@@ -168,7 +167,7 @@ public class PurchaseOrderController : Controller
             memoryStream.Close();
 
             // Return the PDF as a file download
-            return File(pdfBytes, "application/pdf", $"PurchaseOrder-{order.Id}.pdf");
+            return File(pdfBytes, "application/pdf", $"PurchaseOrder-{viewModel.Id}.pdf");
         }
         catch (Exception ex)
         {
@@ -192,7 +191,7 @@ public class PurchaseOrderController : Controller
         if (request.Status != "Approved")
         {
             TempData["ErrorMessage"] = "Only approved purchase order requests can be converted to purchase orders.";
-            return RedirectToAction("Index", "PurchaseApproval");
+            return RedirectToAction("Index", "PurchaseOrderRequest");
         }
 
         // Check if a purchase order already exists for this request

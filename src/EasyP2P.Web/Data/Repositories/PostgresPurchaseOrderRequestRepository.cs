@@ -1,9 +1,9 @@
-﻿using EasyP2P.Web.Models;
-using EasyP2P.Web.Data.Repositories.Interfaces;
-using Npgsql;
+﻿using EasyP2P.Web.Data.Repositories.Interfaces;
 using EasyP2P.Web.Enums;
+using EasyP2P.Web.Models;
+using EasyP2P.Web.Models.Database;
+using Npgsql;
 using System.Data;
-using EasyP2P.Web.Extensions;
 
 namespace EasyP2P.Web.Data.Repositories;
 
@@ -19,17 +19,14 @@ public class PostgresPurchaseOrderRequestRepository : IPurchaseOrderRequestRepos
         _logger = logger;
     }
 
-    public async Task<IEnumerable<PurchaseOrderRequestViewModel>> GetAllAsync()
+    public async Task<IEnumerable<PurchaseOrderRequestDatabaseModel>> GetAllAsync()
     {
-        var requests = new List<PurchaseOrderRequestViewModel>();
+        var requests = new List<PurchaseOrderRequestDatabaseModel>();
 
-        try
-        {
-            await using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
 
-            // Try enhanced query first, fall back to basic if columns don't exist
-            var query = @"
+        var query = @"
                 SELECT id, item_name, quantity, comment, request_date, requested_by, status,
                        COALESCE(last_updated, request_date) as last_updated,
                        COALESCE(updated_by, requested_by) as updated_by,
@@ -41,55 +38,20 @@ public class PostgresPurchaseOrderRequestRepository : IPurchaseOrderRequestRepos
                 FROM purchase_order_requests 
                 ORDER BY request_date DESC";
 
-            await using var command = new NpgsqlCommand(query, connection);
-            await using var reader = await command.ExecuteReaderAsync();
+        await using var command = new NpgsqlCommand(query, connection);
+        await using var reader = await command.ExecuteReaderAsync();
 
-            while (await reader.ReadAsync())
-            {
-                requests.Add(MapToViewModelEnhanced(reader));
-            }
-        }
-        catch (Exception ex)
+        while (await reader.ReadAsync())
         {
-            // If enhanced query fails, try basic query for backward compatibility
-            _logger.LogWarning(ex, "Enhanced query failed, falling back to basic query");
-            return await GetAllAsyncBasic();
+            requests.Add(MapToDatabaseModel(reader));
         }
 
         return requests;
     }
 
-    private async Task<IEnumerable<PurchaseOrderRequestViewModel>> GetAllAsyncBasic()
+    public async Task<IEnumerable<PurchaseOrderRequestDatabaseModel>> GetByStatusAsync(PurchaseOrderRequestState status)
     {
-        var requests = new List<PurchaseOrderRequestViewModel>();
-
-        try
-        {
-            await using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            await using var command = new NpgsqlCommand(
-                "SELECT id, item_name, quantity, comment, request_date, requested_by, status FROM purchase_order_requests ORDER BY request_date DESC",
-                connection);
-
-            await using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                requests.Add(MapToViewModelBasic(reader));
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while retrieving all purchase order requests");
-            throw;
-        }
-
-        return requests;
-    }
-
-    public async Task<IEnumerable<PurchaseOrderRequestViewModel>> GetByStatusAsync(string status)
-    {
-        var requests = new List<PurchaseOrderRequestViewModel>();
+        var requests = new List<PurchaseOrderRequestDatabaseModel>();
 
         try
         {
@@ -110,42 +72,12 @@ public class PostgresPurchaseOrderRequestRepository : IPurchaseOrderRequestRepos
                 ORDER BY request_date DESC";
 
             await using var command = new NpgsqlCommand(query, connection);
-            command.Parameters.AddWithValue("status", status);
+            command.Parameters.AddWithValue("status", Enum.GetName(status));
 
             await using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                requests.Add(MapToViewModelEnhanced(reader));
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while retrieving purchase order requests with status {Status}", status);
-            // Fall back to basic query
-            return await GetByStatusAsyncBasic(status);
-        }
-
-        return requests;
-    }
-
-    private async Task<IEnumerable<PurchaseOrderRequestViewModel>> GetByStatusAsyncBasic(string status)
-    {
-        var requests = new List<PurchaseOrderRequestViewModel>();
-
-        try
-        {
-            await using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            await using var command = new NpgsqlCommand(
-                "SELECT id, item_name, quantity, comment, request_date, requested_by, status FROM purchase_order_requests WHERE status = @status ORDER BY request_date DESC",
-                connection);
-            command.Parameters.AddWithValue("status", status);
-
-            await using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                requests.Add(MapToViewModelBasic(reader));
+                requests.Add(MapToDatabaseModel(reader));
             }
         }
         catch (Exception ex)
@@ -157,14 +89,12 @@ public class PostgresPurchaseOrderRequestRepository : IPurchaseOrderRequestRepos
         return requests;
     }
 
-    public async Task<PurchaseOrderRequestViewModel?> GetByIdAsync(int id)
+    public async Task<PurchaseOrderRequestDatabaseModel?> GetByIdAsync(int id)
     {
-        try
-        {
-            await using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
 
-            var query = @"
+        var query = @"
                 SELECT id, item_name, quantity, comment, request_date, requested_by, status,
                        COALESCE(last_updated, request_date) as last_updated,
                        COALESCE(updated_by, requested_by) as updated_by,
@@ -176,47 +106,13 @@ public class PostgresPurchaseOrderRequestRepository : IPurchaseOrderRequestRepos
                 FROM purchase_order_requests 
                 WHERE id = @id";
 
-            await using var command = new NpgsqlCommand(query, connection);
-            command.Parameters.AddWithValue("id", id);
+        await using var command = new NpgsqlCommand(query, connection);
+        command.Parameters.AddWithValue("id", id);
 
-            await using var reader = await command.ExecuteReaderAsync();
-            if (await reader.ReadAsync())
-            {
-                return MapToViewModelEnhanced(reader);
-            }
-        }
-        catch (Exception ex)
+        await using var reader = await command.ExecuteReaderAsync();
+        if (await reader.ReadAsync())
         {
-            _logger.LogError(ex, "Error occurred while retrieving purchase order request with ID {Id}", id);
-            // Fall back to basic query
-            return await GetByIdAsyncBasic(id);
-        }
-
-        return null;
-    }
-
-    private async Task<PurchaseOrderRequestViewModel?> GetByIdAsyncBasic(int id)
-    {
-        try
-        {
-            await using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            await using var command = new NpgsqlCommand(
-                "SELECT id, item_name, quantity, comment, request_date, requested_by, status FROM purchase_order_requests WHERE id = @id",
-                connection);
-            command.Parameters.AddWithValue("id", id);
-
-            await using var reader = await command.ExecuteReaderAsync();
-            if (await reader.ReadAsync())
-            {
-                return MapToViewModelBasic(reader);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while retrieving purchase order request with ID {Id}", id);
-            throw;
+            return MapToDatabaseModel(reader);
         }
 
         return null;
@@ -224,15 +120,10 @@ public class PostgresPurchaseOrderRequestRepository : IPurchaseOrderRequestRepos
 
     public async Task<int> CreateAsync(PurchaseOrderRequestInputModel model, string requestedBy)
     {
-        try
-        {
-            await using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
 
-            // Try enhanced insert first
-            try
-            {
-                var enhancedQuery = @"
+        var enhancedQuery = @"
                     INSERT INTO purchase_order_requests 
                     (item_name, quantity, comment, request_date, requested_by, status, 
                      last_updated, updated_by, justification, priority, department, 
@@ -242,54 +133,22 @@ public class PostgresPurchaseOrderRequestRepository : IPurchaseOrderRequestRepos
                             @department, @budget_code, @expected_delivery_date) 
                     RETURNING id";
 
-                await using var command = new NpgsqlCommand(enhancedQuery, connection);
+        await using var command = new NpgsqlCommand(enhancedQuery, connection);
 
-                var now = DateTime.UtcNow;
-                command.Parameters.AddWithValue("item_name", model.ItemName);
-                command.Parameters.AddWithValue("quantity", model.Quantity);
-                command.Parameters.AddWithValue("comment", model.Comment ?? (object)DBNull.Value);
-                command.Parameters.AddWithValue("request_date", now);
-                command.Parameters.AddWithValue("requested_by", requestedBy);
-                command.Parameters.AddWithValue("status", "PendingApproval");
-                command.Parameters.AddWithValue("last_updated", now);
-                command.Parameters.AddWithValue("updated_by", requestedBy);
-                command.Parameters.AddWithValue("justification", model.Justification ?? "");
-                command.Parameters.AddWithValue("priority", model.Priority ?? "Medium");
-                command.Parameters.AddWithValue("department", model.Department ?? "");
-                command.Parameters.AddWithValue("budget_code", model.BudgetCode ?? (object)DBNull.Value);
-                command.Parameters.AddWithValue("expected_delivery_date", model.ExpectedDeliveryDate ?? (object)DBNull.Value);
-
-                var result = await command.ExecuteScalarAsync();
-                return Convert.ToInt32(result);
-            }
-            catch
-            {
-                // Fall back to basic insert
-                return await CreateAsyncBasic(model, requestedBy, connection);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while creating purchase order request");
-            throw;
-        }
-    }
-
-    private async Task<int> CreateAsyncBasic(PurchaseOrderRequestInputModel model, string requestedBy, NpgsqlConnection connection)
-    {
-        var basicQuery = @"
-            INSERT INTO purchase_order_requests (item_name, quantity, comment, request_date, requested_by, status) 
-            VALUES (@item_name, @quantity, @comment, @request_date, @requested_by, @status) 
-            RETURNING id";
-
-        await using var command = new NpgsqlCommand(basicQuery, connection);
-
+        var now = DateTime.UtcNow;
         command.Parameters.AddWithValue("item_name", model.ItemName);
         command.Parameters.AddWithValue("quantity", model.Quantity);
         command.Parameters.AddWithValue("comment", model.Comment ?? (object)DBNull.Value);
-        command.Parameters.AddWithValue("request_date", DateTime.UtcNow);
+        command.Parameters.AddWithValue("request_date", now);
         command.Parameters.AddWithValue("requested_by", requestedBy);
         command.Parameters.AddWithValue("status", "PendingApproval");
+        command.Parameters.AddWithValue("last_updated", now);
+        command.Parameters.AddWithValue("updated_by", requestedBy);
+        command.Parameters.AddWithValue("justification", model.Justification ?? "");
+        command.Parameters.AddWithValue("priority", model.Priority ?? "Medium");
+        command.Parameters.AddWithValue("department", model.Department ?? "");
+        command.Parameters.AddWithValue("budget_code", model.BudgetCode ?? (object)DBNull.Value);
+        command.Parameters.AddWithValue("expected_delivery_date", model.ExpectedDeliveryDate ?? (object)DBNull.Value);
 
         var result = await command.ExecuteScalarAsync();
         return Convert.ToInt32(result);
@@ -378,10 +237,9 @@ public class PostgresPurchaseOrderRequestRepository : IPurchaseOrderRequestRepos
         }
     }
 
-    // Enhanced mapping method
-    private PurchaseOrderRequestViewModel MapToViewModelEnhanced(NpgsqlDataReader reader)
+    private PurchaseOrderRequestDatabaseModel MapToDatabaseModel(NpgsqlDataReader reader)
     {
-        return new PurchaseOrderRequestViewModel
+        return new PurchaseOrderRequestDatabaseModel
         {
             Id = reader.GetInt32("id"),
             ItemName = reader.GetString("item_name"),
@@ -397,28 +255,6 @@ public class PostgresPurchaseOrderRequestRepository : IPurchaseOrderRequestRepos
             Department = reader.GetString("department"),
             BudgetCode = reader.IsDBNull("budget_code") ? string.Empty : reader.GetString("budget_code"),
             ExpectedDeliveryDate = reader.IsDBNull("expected_delivery_date") ? null : reader.GetDateTime("expected_delivery_date")
-        };
-    }
-
-    // Basic mapping method for backward compatibility
-    private PurchaseOrderRequestViewModel MapToViewModelBasic(NpgsqlDataReader reader)
-    {
-        return new PurchaseOrderRequestViewModel
-        {
-            Id = reader.GetInt32("id"),
-            ItemName = reader.GetString("item_name"),
-            Quantity = reader.GetInt32("quantity"),
-            Comment = reader.IsDBNull("comment") ? string.Empty : reader.GetString("comment"),
-            RequestDate = reader.GetDateTime("request_date"),
-            RequestedBy = reader.GetString("requested_by"),
-            Status = reader.GetString("status"),
-            LastUpdated = reader.GetDateTime("request_date"), // Use request_date as fallback
-            UpdatedBy = reader.GetString("requested_by"), // Use requested_by as fallback
-            Justification = "", // Default value
-            Priority = "Medium", // Default value
-            Department = "", // Default value
-            BudgetCode = "", // Default value
-            ExpectedDeliveryDate = null // Default value
         };
     }
 }
