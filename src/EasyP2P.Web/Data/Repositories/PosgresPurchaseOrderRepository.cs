@@ -1,4 +1,5 @@
 ﻿using EasyP2P.Web.Data.Repositories.Interfaces;
+using EasyP2P.Web.Enums;
 using EasyP2P.Web.Models;
 using Npgsql;
 
@@ -50,7 +51,7 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
         return orders;
     }
 
-    public async Task<IEnumerable<PurchaseOrderViewModel>> GetByStatusAsync(string status)
+    public async Task<IEnumerable<PurchaseOrderViewModel>> GetByStatusAsync(PurchaseOrderState status)
     {
         var orders = new List<PurchaseOrderViewModel>();
 
@@ -198,7 +199,7 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
         }
     }
 
-    public async Task<bool> UpdateStatusAsync(int id, string status)
+    public async Task<bool> UpdateStatusAsync(int id, PurchaseOrderState status)
     {
         try
         {
@@ -211,7 +212,7 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
                     connection))
                 {
                     command.Parameters.AddWithValue("id", id);
-                    command.Parameters.AddWithValue("status", status);
+                    command.Parameters.AddWithValue("status", Enum.GetName(status)!);
 
                     int rowsAffected = await command.ExecuteNonQueryAsync();
                     return rowsAffected > 0;

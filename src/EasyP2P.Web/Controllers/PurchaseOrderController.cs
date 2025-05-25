@@ -1,5 +1,6 @@
 ﻿// Controllers/PurchaseOrderController.cs
 using EasyP2P.Web.Data.Repositories.Interfaces;
+using EasyP2P.Web.Enums;
 using EasyP2P.Web.Models;
 using iText.Kernel.Colors;
 using iText.Kernel.Pdf;
@@ -233,6 +234,7 @@ public class PurchaseOrderController : Controller
 
                 // Create the purchase order
                 int orderId = await _purchaseOrderRepository.CreateAsync(model, currentUser);
+                await _purchaseOrderRepository.UpdateStatusAsync(orderId, Enums.PurchaseOrderState.PendingApproval);
 
                 _logger.LogInformation("Purchase order created with ID: {OrderId}", orderId);
                 TempData["SuccessMessage"] = "Purchase order created successfully.";
@@ -249,13 +251,101 @@ public class PurchaseOrderController : Controller
         return View(model);
     }
 
+    // POST: PurchaseOrder/Approve/5
+    [HttpPost, ActionName("Approve")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApproveConfirmed(int id)
+    {
+        try
+        {
+            // First, check if the purchase order exists and is in the correct state
+            var order = await _purchaseOrderRepository.GetByIdAsync(id);
+            if (order == null)
+            {
+                TempData["ErrorMessage"] = "Purchase order not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Check if the order is in PendingApproval state
+            if (order.Status != "PendingApproval")
+            {
+                TempData["ErrorMessage"] = "Only purchase orders in 'Pending Approval' state can be approved.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            // Update the status to Approved
+            var result = await _purchaseOrderRepository.UpdateStatusAsync(id, PurchaseOrderState.Approved);
+
+            if (result)
+            {
+                _logger.LogInformation("Purchase order with ID {OrderId} has been approved by user", id);
+                TempData["SuccessMessage"] = $"Purchase order #{id} has been approved successfully.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Failed to approve the purchase order. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error approving purchase order with ID {OrderId}", id);
+            TempData["ErrorMessage"] = "An error occurred while approving the purchase order.";
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    // POST: PurchaseOrder/Reject/5
+    [HttpPost, ActionName("Reject")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RejectConfirmed(int id)
+    {
+        try
+        {
+            // First, check if the purchase order exists and is in the correct state
+            var order = await _purchaseOrderRepository.GetByIdAsync(id);
+            if (order == null)
+            {
+                TempData["ErrorMessage"] = "Purchase order not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Check if the order is in PendingApproval state
+            if (order.Status != "PendingApproval")
+            {
+                TempData["ErrorMessage"] = "Only purchase orders in 'Pending Approval' state can be rejected.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            // Update the status to Rejected
+            var result = await _purchaseOrderRepository.UpdateStatusAsync(id, PurchaseOrderState.Rejected);
+
+            if (result)
+            {
+                _logger.LogInformation("Purchase order with ID {OrderId} has been rejected by user", id);
+                TempData["SuccessMessage"] = $"Purchase order #{id} has been rejected.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Failed to reject the purchase order. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error rejecting purchase order with ID {OrderId}", id);
+            TempData["ErrorMessage"] = "An error occurred while rejecting the purchase order.";
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
     [HttpPost, ActionName("Cancel")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CancelConfirmed(int id)
     {
         try
         {
-            var result = await _purchaseOrderRepository.UpdateStatusAsync(id, "Cancelled");
+            var result = await _purchaseOrderRepository.UpdateStatusAsync(id, Enums.PurchaseOrderState.Cancelled);
             if (result)
             {
                 _logger.LogInformation("Purchase order with ID {OrderId} has been cancelled", id);

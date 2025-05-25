@@ -1,4 +1,5 @@
 ﻿using EasyP2P.Web.Models;
+using EasyP2P.Web.Enums;
 
 namespace EasyP2P.Web.Data.Repositories.Interfaces;
 
@@ -8,7 +9,7 @@ public interface IPurchaseOrderRepository
     Task<IEnumerable<PurchaseOrderViewModel>> GetAllAsync();
 
     // Get purchase orders by status
-    Task<IEnumerable<PurchaseOrderViewModel>> GetByStatusAsync(string status);
+    Task<IEnumerable<PurchaseOrderViewModel>> GetByStatusAsync(PurchaseOrderState status);
 
     // Get a single purchase order by ID
     Task<PurchaseOrderViewModel?> GetByIdAsync(int id);
@@ -20,7 +21,7 @@ public interface IPurchaseOrderRepository
     Task<int> CreateAsync(PurchaseOrderModel model, string createdBy);
 
     // Update the status of a purchase order
-    Task<bool> UpdateStatusAsync(int id, string status);
+    Task<bool> UpdateStatusAsync(int id, PurchaseOrderState status);
 
     // Delete a purchase order
     Task<bool> DeleteAsync(int id);

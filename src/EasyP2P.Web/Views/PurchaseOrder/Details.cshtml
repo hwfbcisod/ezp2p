@@ -8,13 +8,31 @@
     <div class="row">
         <div class="col-md-8 offset-md-2">
             <div class="card">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h4>Purchase Order Details</h4>
-                    <a asp-action="ExportPdf" asp-route-id="@Model.Id" class="btn btn-light">
-                        <i class="bi bi-file-earmark-pdf"></i> Export to PDF
-                    </a>
+                    <div>
+                        <a asp-action="ExportPdf" asp-route-id="@Model.Id" class="btn btn-light">
+                            <i class="bi bi-file-earmark-pdf"></i> Export to PDF
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
                     <div class="row mb-3">
                         <div class="col-md-4 fw-bold">Purchase Order ID:</div>
                         <div class="col-md-8">@Model.Id</div>
@@ -53,16 +71,98 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-md-4 fw-bold">Status:</div>
-                        <div class="col-md-8">@Model.Status</div>
+                        <div class="col-md-8">
+                            <span class="badge bg-@(Model.Status == "Created" ? "secondary" :
+                                                    Model.Status == "PendingApproval" ? "warning" :
+                                                    Model.Status == "Approved" ? "success" :
+                                                    Model.Status == "Rejected" ? "danger" :
+                                                    Model.Status == "Cancelled" ? "danger" : "secondary")">
+                                @Model.Status
+                            </span>
+                        </div>
                     </div>
 
-                    <div class="d-flex justify-content-between">
-                        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
-                        @if (Model.Status != "Cancelled")
-                        {
-                            <a asp-action="Cancel" asp-route-id="@Model.Id" class="btn btn-warning">Cancel Order</a>
-                        }
+                    <!-- Action Buttons -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between flex-wrap gap-2">
+                                <!-- Left side - Back button -->
+                                <div>
+                                    <a asp-action="Index" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Back to List
+                                    </a>
+                                </div>
+
+                                <!-- Right side - Action buttons -->
+                                <div class="d-flex gap-2 flex-wrap">
+                                    @if (Model.Status == "PendingApproval")
+                                    {
+                                        <!-- Approval Actions for Pending Orders -->
+                                        <div class="btn-group" role="group">
+                                            <form asp-action="Approve" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-success"
+                                                        onclick="return confirm('Are you sure you want to approve this purchase order? This action cannot be undone.')">
+                                                    <i class="bi bi-check-circle"></i> Approve
+                                                </button>
+                                            </form>
+
+                                            <form asp-action="Reject" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-danger"
+                                                        onclick="return confirm('Are you sure you want to reject this purchase order? This action cannot be undone.')">
+                                                    <i class="bi bi-x-circle"></i> Reject
+                                                </button>
+                                            </form>
+                                        </div>
+                                    }
+
+                                    @if (Model.Status != "Cancelled" && Model.Status != "Rejected" && Model.Status != "ClosedCompleted")
+                                    {
+                                        <!-- Cancel button for non-terminal states -->
+                                        <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-warning"
+                                                    onclick="return confirm('Are you sure you want to cancel this purchase order?')">
+                                                <i class="bi bi-x-square"></i> Cancel Order
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Status Information -->
+                    @if (Model.Status == "PendingApproval")
+                    {
+                        <div class="alert alert-info mt-3">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Pending Approval:</strong> This purchase order requires approval before it can proceed.
+                            Please review all details carefully before approving or rejecting.
+                        </div>
+                    }
+                    else if (Model.Status == "Approved")
+                    {
+                        <div class="alert alert-success mt-3">
+                            <i class="bi bi-check-circle"></i>
+                            <strong>Approved:</strong> This purchase order has been approved and is ready for the next step in the process.
+                        </div>
+                    }
+                    else if (Model.Status == "Rejected")
+                    {
+                        <div class="alert alert-danger mt-3">
+                            <i class="bi bi-x-circle"></i>
+                            <strong>Rejected:</strong> This purchase order has been rejected and will not proceed further.
+                        </div>
+                    }
+                    else if (Model.Status == "Cancelled")
+                    {
+                        <div class="alert alert-warning mt-3">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Cancelled:</strong> This purchase order has been cancelled.
+                        </div>
+                    }
                 </div>
             </div>
         </div>

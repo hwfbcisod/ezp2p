@@ -121,7 +121,7 @@
     <div class="card">
         <div class="card-header bg-primary text-white">
             <h5>
-                All Purchase Orders 
+                All Purchase Orders
                 <span class="badge bg-light text-dark" id="totalCount">@Model.Count()</span>
                 <span class="badge bg-warning text-dark" id="filteredBadge" style="display: none;">Filtered</span>
             </h5>
@@ -193,14 +193,14 @@
                         <tbody>
                             @foreach (var item in Model)
                             {
-                                <tr data-po-id="@item.Id" 
-                                    data-por-id="@item.PurchaseOrderRequestId" 
-                                    data-item="@item.ItemName.ToLower()" 
-                                    data-quantity="@item.Quantity" 
-                                    data-unit-price="@item.UnitPrice" 
-                                    data-total-price="@item.TotalPrice" 
-                                    data-supplier="@item.Supplier.ToLower()" 
-                                    data-date="@item.OrderDate.ToString("yyyy-MM-dd")" 
+                                <tr data-po-id="@item.Id"
+                                    data-por-id="@item.PurchaseOrderRequestId"
+                                    data-item="@item.ItemName.ToLower()"
+                                    data-quantity="@item.Quantity"
+                                    data-unit-price="@item.UnitPrice"
+                                    data-total-price="@item.TotalPrice"
+                                    data-supplier="@item.Supplier.ToLower()"
+                                    data-date="@item.OrderDate.ToString("yyyy-MM-dd")"
                                     data-status="@item.Status.ToLower()">
                                     <td>@item.Id</td>
                                     <td>@item.PurchaseOrderRequestId</td>
@@ -211,8 +211,8 @@
                                     <td>@item.Supplier</td>
                                     <td>@item.OrderDate.ToString("yyyy-MM-dd HH:mm")</td>
                                     <td>
-                                        <span class="badge bg-@(item.Status == "Created" ? "primary" : 
-                                                                item.Status == "Approved" ? "success" : 
+                                        <span class="badge bg-@(item.Status == "Created" ? "primary" :
+                                                                item.Status == "Approved" ? "success" :
                                                                 item.Status == "Cancelled" ? "danger" : "secondary")">
                                             @item.Status
                                         </span>
@@ -254,264 +254,264 @@
         color: #6c757d;
         text-decoration: none !important;
     }
-    
+
     .sort-btn:hover {
         color: #0d6efd;
     }
-    
+
     .sort-btn.active {
         color: #0d6efd;
     }
-    
+
     .filter-input {
         transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
     }
-    
+
     .filter-input:focus {
         border-color: #86b7fe;
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     }
-    
+
     .table tbody tr.filtered-out {
         display: none;
     }
-    
+
     .badge {
         font-size: 0.75em;
     }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Elements
-    const toggleFiltersBtn = document.getElementById('toggleFilters');
-    const filtersCard = document.getElementById('filtersCard');
-    const clearFiltersBtn = document.getElementById('clearFilters');
-    const applyFiltersBtn = document.getElementById('applyFilters');
-    const resetFiltersBtn = document.getElementById('resetFilters');
-    const filteredCountSpan = document.getElementById('filteredCount');
-    const totalCountSpan = document.getElementById('totalCount');
-    const filteredBadge = document.getElementById('filteredBadge');
-    const tableRows = document.querySelectorAll('#purchaseOrdersTable tbody tr');
-    const filterInputs = document.querySelectorAll('.filter-input');
-    const sortButtons = document.querySelectorAll('.sort-btn');
-    
-    const totalCount = tableRows.length;
-    let currentSort = { column: null, direction: 'asc' };
-    
-    // Toggle filters visibility
-    toggleFiltersBtn.addEventListener('click', function() {
-        if (filtersCard.style.display === 'none') {
-            filtersCard.style.display = 'block';
-            this.innerHTML = '<i class="bi bi-funnel-fill"></i> Hide Filters';
-        } else {
-            filtersCard.style.display = 'none';
-            this.innerHTML = '<i class="bi bi-funnel"></i> Toggle Filters';
-        }
-    });
-    
-    // Clear all filters
-    clearFiltersBtn.addEventListener('click', function() {
-        filterInputs.forEach(input => {
-            input.value = '';
+    document.addEventListener('DOMContentLoaded', function() {
+        // Elements
+        const toggleFiltersBtn = document.getElementById('toggleFilters');
+        const filtersCard = document.getElementById('filtersCard');
+        const clearFiltersBtn = document.getElementById('clearFilters');
+        const applyFiltersBtn = document.getElementById('applyFilters');
+        const resetFiltersBtn = document.getElementById('resetFilters');
+        const filteredCountSpan = document.getElementById('filteredCount');
+        const totalCountSpan = document.getElementById('totalCount');
+        const filteredBadge = document.getElementById('filteredBadge');
+        const tableRows = document.querySelectorAll('#purchaseOrdersTable tbody tr');
+        const filterInputs = document.querySelectorAll('.filter-input');
+        const sortButtons = document.querySelectorAll('.sort-btn');
+
+        const totalCount = tableRows.length;
+        let currentSort = { column: null, direction: 'asc' };
+
+        // Toggle filters visibility
+        toggleFiltersBtn.addEventListener('click', function() {
+            if (filtersCard.style.display === 'none') {
+                filtersCard.style.display = 'block';
+                this.innerHTML = '<i class="bi bi-funnel-fill"></i> Hide Filters';
+            } else {
+                filtersCard.style.display = 'none';
+                this.innerHTML = '<i class="bi bi-funnel"></i> Toggle Filters';
+            }
         });
+
+        // Clear all filters
+        clearFiltersBtn.addEventListener('click', function() {
+            filterInputs.forEach(input => {
+                input.value = '';
+            });
+            applyFilters();
+        });
+
+        // Reset filters (same as clear for now)
+        resetFiltersBtn.addEventListener('click', function() {
+            clearFiltersBtn.click();
+        });
+
+        // Apply filters on button click
+        applyFiltersBtn.addEventListener('click', applyFilters);
+
+        // Apply filters on input change (with debounce)
+        let filterTimeout;
+        filterInputs.forEach(input => {
+            input.addEventListener('input', function() {
+                clearTimeout(filterTimeout);
+                filterTimeout = setTimeout(applyFilters, 300);
+            });
+        });
+
+        // Filter function
+        function applyFilters() {
+            let visibleCount = 0;
+            const hasActiveFilters = Array.from(filterInputs).some(input => input.value.trim() !== '');
+
+            tableRows.forEach(row => {
+                let isVisible = true;
+
+                // PO ID filter
+                const poIdFilter = document.getElementById('filterPoId').value;
+                if (poIdFilter && row.dataset.poId !== poIdFilter) {
+                    isVisible = false;
+                }
+
+                // POR ID filter
+                const porIdFilter = document.getElementById('filterPorId').value;
+                if (porIdFilter && row.dataset.porId !== porIdFilter) {
+                    isVisible = false;
+                }
+
+                // Item filter
+                const itemFilter = document.getElementById('filterItem').value.toLowerCase();
+                if (itemFilter && !row.dataset.item.includes(itemFilter)) {
+                    isVisible = false;
+                }
+
+                // Quantity range filter
+                const quantityMin = document.getElementById('filterQuantityMin').value;
+                const quantityMax = document.getElementById('filterQuantityMax').value;
+                const quantity = parseInt(row.dataset.quantity);
+                if (quantityMin && quantity < parseInt(quantityMin)) {
+                    isVisible = false;
+                }
+                if (quantityMax && quantity > parseInt(quantityMax)) {
+                    isVisible = false;
+                }
+
+                // Unit price range filter
+                const unitPriceMin = document.getElementById('filterUnitPriceMin').value;
+                const unitPriceMax = document.getElementById('filterUnitPriceMax').value;
+                const unitPrice = parseFloat(row.dataset.unitPrice);
+                if (unitPriceMin && unitPrice < parseFloat(unitPriceMin)) {
+                    isVisible = false;
+                }
+                if (unitPriceMax && unitPrice > parseFloat(unitPriceMax)) {
+                    isVisible = false;
+                }
+
+                // Total price range filter
+                const totalPriceMin = document.getElementById('filterTotalPriceMin').value;
+                const totalPriceMax = document.getElementById('filterTotalPriceMax').value;
+                const totalPrice = parseFloat(row.dataset.totalPrice);
+                if (totalPriceMin && totalPrice < parseFloat(totalPriceMin)) {
+                    isVisible = false;
+                }
+                if (totalPriceMax && totalPrice > parseFloat(totalPriceMax)) {
+                    isVisible = false;
+                }
+
+                // Supplier filter
+                const supplierFilter = document.getElementById('filterSupplier').value.toLowerCase();
+                if (supplierFilter && !row.dataset.supplier.includes(supplierFilter)) {
+                    isVisible = false;
+                }
+
+                // Date range filter
+                const dateFrom = document.getElementById('filterDateFrom').value;
+                const dateTo = document.getElementById('filterDateTo').value;
+                const rowDate = row.dataset.date;
+                if (dateFrom && rowDate < dateFrom) {
+                    isVisible = false;
+                }
+                if (dateTo && rowDate > dateTo) {
+                    isVisible = false;
+                }
+
+                // Status filter
+                const statusFilter = document.getElementById('filterStatus').value.toLowerCase();
+                if (statusFilter && row.dataset.status !== statusFilter) {
+                    isVisible = false;
+                }
+
+                // Apply visibility
+                if (isVisible) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update counts and badges
+            filteredCountSpan.textContent = visibleCount;
+            if (hasActiveFilters) {
+                filteredBadge.style.display = 'inline-block';
+                totalCountSpan.textContent = visibleCount;
+            } else {
+                filteredBadge.style.display = 'none';
+                totalCountSpan.textContent = totalCount;
+            }
+        }
+
+        // Sorting functionality
+        sortButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const column = this.dataset.column;
+                let direction = this.dataset.direction;
+
+                // Reset all sort buttons
+                sortButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '<i class="bi bi-arrow-up-down"></i>';
+                });
+
+                // Toggle direction
+                if (currentSort.column === column) {
+                    direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    direction = 'asc';
+                }
+
+                // Update current sort
+                currentSort = { column, direction };
+
+                // Update button appearance
+                this.classList.add('active');
+                this.innerHTML = direction === 'asc' ? '<i class="bi bi-arrow-up"></i>' : '<i class="bi bi-arrow-down"></i>';
+                this.dataset.direction = direction;
+
+                // Sort the table
+                sortTable(column, direction);
+            });
+        });
+
+        function sortTable(column, direction) {
+            const tbody = document.querySelector('#purchaseOrdersTable tbody');
+            const rows = Array.from(tableRows);
+
+            rows.sort((a, b) => {
+                let aValue, bValue;
+
+                switch (column) {
+                    case 'id':
+                    case 'porId':
+                    case 'quantity':
+                        aValue = parseInt(a.dataset[column === 'porId' ? 'porId' : column === 'id' ? 'poId' : 'quantity']);
+                        bValue = parseInt(b.dataset[column === 'porId' ? 'porId' : column === 'id' ? 'poId' : 'quantity']);
+                        break;
+                    case 'unitPrice':
+                    case 'totalPrice':
+                        aValue = parseFloat(a.dataset[column]);
+                        bValue = parseFloat(b.dataset[column]);
+                        break;
+                    case 'date':
+                        aValue = new Date(a.dataset.date);
+                        bValue = new Date(b.dataset.date);
+                        break;
+                    case 'item':
+                    case 'supplier':
+                    case 'status':
+                        aValue = a.dataset[column];
+                        bValue = b.dataset[column];
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // Re-append sorted rows
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        // Initialize with no filters applied
         applyFilters();
     });
-    
-    // Reset filters (same as clear for now)
-    resetFiltersBtn.addEventListener('click', function() {
-        clearFiltersBtn.click();
-    });
-    
-    // Apply filters on button click
-    applyFiltersBtn.addEventListener('click', applyFilters);
-    
-    // Apply filters on input change (with debounce)
-    let filterTimeout;
-    filterInputs.forEach(input => {
-        input.addEventListener('input', function() {
-            clearTimeout(filterTimeout);
-            filterTimeout = setTimeout(applyFilters, 300);
-        });
-    });
-    
-    // Filter function
-    function applyFilters() {
-        let visibleCount = 0;
-        const hasActiveFilters = Array.from(filterInputs).some(input => input.value.trim() !== '');
-        
-        tableRows.forEach(row => {
-            let isVisible = true;
-            
-            // PO ID filter
-            const poIdFilter = document.getElementById('filterPoId').value;
-            if (poIdFilter && row.dataset.poId !== poIdFilter) {
-                isVisible = false;
-            }
-            
-            // POR ID filter
-            const porIdFilter = document.getElementById('filterPorId').value;
-            if (porIdFilter && row.dataset.porId !== porIdFilter) {
-                isVisible = false;
-            }
-            
-            // Item filter
-            const itemFilter = document.getElementById('filterItem').value.toLowerCase();
-            if (itemFilter && !row.dataset.item.includes(itemFilter)) {
-                isVisible = false;
-            }
-            
-            // Quantity range filter
-            const quantityMin = document.getElementById('filterQuantityMin').value;
-            const quantityMax = document.getElementById('filterQuantityMax').value;
-            const quantity = parseInt(row.dataset.quantity);
-            if (quantityMin && quantity < parseInt(quantityMin)) {
-                isVisible = false;
-            }
-            if (quantityMax && quantity > parseInt(quantityMax)) {
-                isVisible = false;
-            }
-            
-            // Unit price range filter
-            const unitPriceMin = document.getElementById('filterUnitPriceMin').value;
-            const unitPriceMax = document.getElementById('filterUnitPriceMax').value;
-            const unitPrice = parseFloat(row.dataset.unitPrice);
-            if (unitPriceMin && unitPrice < parseFloat(unitPriceMin)) {
-                isVisible = false;
-            }
-            if (unitPriceMax && unitPrice > parseFloat(unitPriceMax)) {
-                isVisible = false;
-            }
-            
-            // Total price range filter
-            const totalPriceMin = document.getElementById('filterTotalPriceMin').value;
-            const totalPriceMax = document.getElementById('filterTotalPriceMax').value;
-            const totalPrice = parseFloat(row.dataset.totalPrice);
-            if (totalPriceMin && totalPrice < parseFloat(totalPriceMin)) {
-                isVisible = false;
-            }
-            if (totalPriceMax && totalPrice > parseFloat(totalPriceMax)) {
-                isVisible = false;
-            }
-            
-            // Supplier filter
-            const supplierFilter = document.getElementById('filterSupplier').value.toLowerCase();
-            if (supplierFilter && !row.dataset.supplier.includes(supplierFilter)) {
-                isVisible = false;
-            }
-            
-            // Date range filter
-            const dateFrom = document.getElementById('filterDateFrom').value;
-            const dateTo = document.getElementById('filterDateTo').value;
-            const rowDate = row.dataset.date;
-            if (dateFrom && rowDate < dateFrom) {
-                isVisible = false;
-            }
-            if (dateTo && rowDate > dateTo) {
-                isVisible = false;
-            }
-            
-            // Status filter
-            const statusFilter = document.getElementById('filterStatus').value.toLowerCase();
-            if (statusFilter && row.dataset.status !== statusFilter) {
-                isVisible = false;
-            }
-            
-            // Apply visibility
-            if (isVisible) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-        
-        // Update counts and badges
-        filteredCountSpan.textContent = visibleCount;
-        if (hasActiveFilters) {
-            filteredBadge.style.display = 'inline-block';
-            totalCountSpan.textContent = visibleCount;
-        } else {
-            filteredBadge.style.display = 'none';
-            totalCountSpan.textContent = totalCount;
-        }
-    }
-    
-    // Sorting functionality
-    sortButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const column = this.dataset.column;
-            let direction = this.dataset.direction;
-            
-            // Reset all sort buttons
-            sortButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.innerHTML = '<i class="bi bi-arrow-up-down"></i>';
-            });
-            
-            // Toggle direction
-            if (currentSort.column === column) {
-                direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                direction = 'asc';
-            }
-            
-            // Update current sort
-            currentSort = { column, direction };
-            
-            // Update button appearance
-            this.classList.add('active');
-            this.innerHTML = direction === 'asc' ? '<i class="bi bi-arrow-up"></i>' : '<i class="bi bi-arrow-down"></i>';
-            this.dataset.direction = direction;
-            
-            // Sort the table
-            sortTable(column, direction);
-        });
-    });
-    
-    function sortTable(column, direction) {
-        const tbody = document.querySelector('#purchaseOrdersTable tbody');
-        const rows = Array.from(tableRows);
-        
-        rows.sort((a, b) => {
-            let aValue, bValue;
-            
-            switch (column) {
-                case 'id':
-                case 'porId':
-                case 'quantity':
-                    aValue = parseInt(a.dataset[column === 'porId' ? 'porId' : column === 'id' ? 'poId' : 'quantity']);
-                    bValue = parseInt(b.dataset[column === 'porId' ? 'porId' : column === 'id' ? 'poId' : 'quantity']);
-                    break;
-                case 'unitPrice':
-                case 'totalPrice':
-                    aValue = parseFloat(a.dataset[column]);
-                    bValue = parseFloat(b.dataset[column]);
-                    break;
-                case 'date':
-                    aValue = new Date(a.dataset.date);
-                    bValue = new Date(b.dataset.date);
-                    break;
-                case 'item':
-                case 'supplier':
-                case 'status':
-                    aValue = a.dataset[column];
-                    bValue = b.dataset[column];
-                    break;
-                default:
-                    return 0;
-            }
-            
-            if (aValue < bValue) return direction === 'asc' ? -1 : 1;
-            if (aValue > bValue) return direction === 'asc' ? 1 : -1;
-            return 0;
-        });
-        
-        // Re-append sorted rows
-        rows.forEach(row => tbody.appendChild(row));
-    }
-    
-    // Initialize with no filters applied
-    applyFilters();
-});
 </script>
