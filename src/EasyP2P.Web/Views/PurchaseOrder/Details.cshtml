@@ -1,27 +1,32 @@
 ﻿@model EasyP2P.Web.Models.PurchaseOrderViewModel
 
 @{
-    ViewData["Title"] = "Purchase Order Details";
+    ViewData["Title"] = $"Purchase Order #{Model.Id}";
 }
 
 <div class="container mt-4">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card">
+        <div class="col-md-10 offset-md-1">
+            <div class="card shadow">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h4>Purchase Order Details</h4>
-                    <div>
-                        <a asp-action="ExportPdf" asp-route-id="@Model.Id" class="btn btn-light">
-                            <i class="bi bi-file-earmark-pdf"></i> Export to PDF
-                        </a>
-                    </div>
+                    <h4>
+                        <i class="bi bi-file-text"></i>
+                        Purchase Order #@Model.Id
+                    </h4>
+                    <span class="badge @(Model.Status == "Created" ? "bg-secondary" :
+                                          Model.Status == "PendingApproval" ? "bg-warning" :
+                                          Model.Status == "Approved" ? "bg-success" :
+                                          Model.Status == "Rejected" ? "bg-danger" :
+                                          Model.Status == "Cancelled" ? "bg-dark" : "bg-info") fs-6">
+                        @Model.Status
+                    </span>
                 </div>
                 <div class="card-body">
                     @if (TempData["SuccessMessage"] != null)
                     {
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             @TempData["SuccessMessage"]
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     }
 
@@ -29,67 +34,153 @@
                     {
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             @TempData["ErrorMessage"]
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     }
 
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Purchase Order ID:</div>
-                        <div class="col-md-8">@Model.Id</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Purchase Order Request ID:</div>
-                        <div class="col-md-8">@Model.PurchaseOrderRequestId</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Item Name:</div>
-                        <div class="col-md-8">@Model.ItemName</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Quantity:</div>
-                        <div class="col-md-8">@Model.Quantity</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Unit Price:</div>
-                        <div class="col-md-8">@Model.UnitPrice.ToString("C")</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Total Price:</div>
-                        <div class="col-md-8">@Model.TotalPrice.ToString("C")</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Supplier:</div>
-                        <div class="col-md-8">@Model.Supplier</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Order Date:</div>
-                        <div class="col-md-8">@Model.OrderDate.ToString("yyyy-MM-dd HH:mm")</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Created By:</div>
-                        <div class="col-md-8">@Model.CreatedBy</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Status:</div>
-                        <div class="col-md-8">
-                            <span class="badge bg-@(Model.Status == "Created" ? "secondary" :
-                                                    Model.Status == "PendingApproval" ? "warning" :
-                                                    Model.Status == "Approved" ? "success" :
-                                                    Model.Status == "Rejected" ? "danger" :
-                                                    Model.Status == "Cancelled" ? "danger" : "secondary")">
-                                @Model.Status
-                            </span>
+                    <!-- Purchase Order Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Order Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">Purchase Order ID:</td>
+                                    <td>#@Model.Id</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Related POR ID:</td>
+                                    <td>#@Model.PurchaseOrderRequestId</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Item Name:</td>
+                                    <td>@Model.ItemName</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Quantity:</td>
+                                    <td>@Model.Quantity</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Supplier:</td>
+                                    <td>@Model.Supplier</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Financial Details</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">Unit Price:</td>
+                                    <td>@Model.UnitPrice.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Total Quantity:</td>
+                                    <td>@Model.Quantity</td>
+                                </tr>
+                                <tr class="table-success">
+                                    <td class="fw-bold">Total Price:</td>
+                                    <td class="fw-bold">@Model.TotalPrice.ToString("C")</td>
+                                </tr>
+                            </table>
                         </div>
                     </div>
 
+                    <!-- Order Status & Tracking -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Order Tracking</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">Order Date:</td>
+                                    <td>@Model.OrderDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Created By:</td>
+                                    <td>@Model.CreatedBy</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Current Status:</td>
+                                    <td>
+                                        <span class="badge @(Model.Status == "Created" ? "bg-secondary" :
+                                                              Model.Status == "PendingApproval" ? "bg-warning" :
+                                                              Model.Status == "Approved" ? "bg-success" :
+                                                              Model.Status == "Rejected" ? "bg-danger" :
+                                                              Model.Status == "Cancelled" ? "bg-dark" : "bg-info")">
+                                            @Model.Status
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Quick Actions</h5>
+                            <div class="d-grid gap-2">
+                                <a asp-action="ExportPdf" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                                    <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                                </a>
+                                @if (Model.Status == "PendingApproval")
+                                {
+                                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#actionModal">
+                                        <i class="bi bi-gear"></i> Manage Order
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Information -->
+                    <div class="mb-4">
+                        @switch (Model.Status)
+                        {
+                            case "Created":
+                                <div class="alert alert-secondary">
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>Created:</strong> This purchase order has been created and is ready for review.
+                                </div>
+                                break;
+                            case "PendingApproval":
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-clock"></i>
+                                    <strong>Pending Approval:</strong> This purchase order is currently under review by authorized approvers.
+                                </div>
+                                break;
+                            case "Approved":
+                                <div class="alert alert-success">
+                                    <i class="bi bi-check-circle"></i>
+                                    <strong>Approved:</strong> This purchase order has been approved and can be sent to the supplier.
+                                </div>
+                                break;
+                            case "Rejected":
+                                <div class="alert alert-danger">
+                                    <i class="bi bi-x-circle"></i>
+                                    <strong>Rejected:</strong> This purchase order has been rejected and will not proceed.
+                                </div>
+                                break;
+                            case "Sent":
+                                <div class="alert alert-info">
+                                    <i class="bi bi-send"></i>
+                                    <strong>Sent:</strong> This purchase order has been sent to the supplier.
+                                </div>
+                                break;
+                            case "Cancelled":
+                                <div class="alert alert-dark">
+                                    <i class="bi bi-dash-circle"></i>
+                                    <strong>Cancelled:</strong> This purchase order has been cancelled.
+                                </div>
+                                break;
+                        }
+                    </div>
+
                     <!-- Action Buttons -->
-                    <div class="row mt-4">
+                    <div class="row">
                         <div class="col-12">
                             <div class="d-flex justify-content-between flex-wrap gap-2">
-                                <!-- Left side - Back button -->
+                                <!-- Left side - Navigation buttons -->
                                 <div>
                                     <a asp-action="Index" class="btn btn-secondary">
-                                        <i class="bi bi-arrow-left"></i> Back to List
+                                        <i class="bi bi-arrow-left"></i> Back to Orders
+                                    </a>
+                                    <a asp-controller="PurchaseOrderRequest" asp-action="Details" asp-route-id="@Model.PurchaseOrderRequestId" class="btn btn-outline-info">
+                                        <i class="bi bi-link"></i> View Original Request
                                     </a>
                                 </div>
 
@@ -97,34 +188,30 @@
                                 <div class="d-flex gap-2 flex-wrap">
                                     @if (Model.Status == "PendingApproval")
                                     {
-                                        <!-- Approval Actions for Pending Orders -->
-                                        <div class="btn-group" role="group">
-                                            <form asp-action="Approve" asp-route-id="@Model.Id" method="post" style="display: inline;">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-success"
-                                                        onclick="return confirm('Are you sure you want to approve this purchase order? This action cannot be undone.')">
-                                                    <i class="bi bi-check-circle"></i> Approve
-                                                </button>
-                                            </form>
+                                        <form asp-action="Approve" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-success"
+                                                    onclick="return confirm('Are you sure you want to approve Purchase Order #@Model.Id?')">
+                                                <i class="bi bi-check-circle"></i> Approve
+                                            </button>
+                                        </form>
 
-                                            <form asp-action="Reject" asp-route-id="@Model.Id" method="post" style="display: inline;">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-danger"
-                                                        onclick="return confirm('Are you sure you want to reject this purchase order? This action cannot be undone.')">
-                                                    <i class="bi bi-x-circle"></i> Reject
-                                                </button>
-                                            </form>
-                                        </div>
+                                        <form asp-action="Reject" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-danger"
+                                                    onclick="return confirm('Are you sure you want to reject Purchase Order #@Model.Id?')">
+                                                <i class="bi bi-x-circle"></i> Reject
+                                            </button>
+                                        </form>
                                     }
 
-                                    @if (Model.Status != "Cancelled" && Model.Status != "Rejected" && Model.Status != "ClosedCompleted")
+                                    @if (Model.Status != "Cancelled" && Model.Status != "Rejected")
                                     {
-                                        <!-- Cancel button for non-terminal states -->
                                         <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" style="display: inline;">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn btn-warning"
-                                                    onclick="return confirm('Are you sure you want to cancel this purchase order?')">
-                                                <i class="bi bi-x-square"></i> Cancel Order
+                                                    onclick="return confirm('Are you sure you want to cancel Purchase Order #@Model.Id?')">
+                                                <i class="bi bi-x-square"></i> Cancel
                                             </button>
                                         </form>
                                     }
@@ -132,39 +219,45 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Status Information -->
-                    @if (Model.Status == "PendingApproval")
-                    {
-                        <div class="alert alert-info mt-3">
-                            <i class="bi bi-info-circle"></i>
-                            <strong>Pending Approval:</strong> This purchase order requires approval before it can proceed.
-                            Please review all details carefully before approving or rejecting.
-                        </div>
-                    }
-                    else if (Model.Status == "Approved")
-                    {
-                        <div class="alert alert-success mt-3">
-                            <i class="bi bi-check-circle"></i>
-                            <strong>Approved:</strong> This purchase order has been approved and is ready for the next step in the process.
-                        </div>
-                    }
-                    else if (Model.Status == "Rejected")
-                    {
-                        <div class="alert alert-danger mt-3">
-                            <i class="bi bi-x-circle"></i>
-                            <strong>Rejected:</strong> This purchase order has been rejected and will not proceed further.
-                        </div>
-                    }
-                    else if (Model.Status == "Cancelled")
-                    {
-                        <div class="alert alert-warning mt-3">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <strong>Cancelled:</strong> This purchase order has been cancelled.
-                        </div>
-                    }
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Action Modal for additional operations -->
+@if (Model.Status == "PendingApproval")
+{
+    <div class="modal fade" id="actionModal" tabindex="-1" aria-labelledby="actionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="actionModalLabel">Manage Purchase Order #@Model.Id</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Choose an action for this purchase order:</p>
+                    <div class="d-grid gap-2">
+                        <form asp-action="Approve" asp-route-id="@Model.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-success w-100"
+                                    onclick="return confirm('Approve this purchase order?')">
+                                <i class="bi bi-check-circle"></i> Approve Order
+                            </button>
+                        </form>
+                        <form asp-action="Reject" asp-route-id="@Model.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-danger w-100"
+                                    onclick="return confirm('Reject this purchase order?')">
+                                <i class="bi bi-x-circle"></i> Reject Order
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}

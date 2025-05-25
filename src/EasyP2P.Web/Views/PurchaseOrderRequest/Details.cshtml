@@ -1,0 +1,228 @@
+﻿@model EasyP2P.Web.Models.PurchaseOrderRequestViewModel
+
+@{
+    ViewData["Title"] = $"Purchase Order Request #{Model.Id}";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4>
+                        <i class="@Model.StatusIcon"></i>
+                        Purchase Order Request #@Model.Id
+                    </h4>
+                    <span class="badge @Model.StatusBadgeClass fs-6">@Model.Status</span>
+                </div>
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                            @if (TempData["CreatePOLink"] != null && Model.Status == "Approved")
+                            {
+                                <div class="mt-2">
+                                    <a asp-controller="PurchaseOrder" asp-action="Create" asp-route-id="@Model.Id"
+                                       class="btn btn-success btn-sm">
+                                        <i class="bi bi-file-plus"></i> Create Purchase Order Now
+                                    </a>
+                                </div>
+                            }
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <!-- Request Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Request Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">Item Name:</td>
+                                    <td>@Model.ItemName</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Quantity:</td>
+                                    <td>@Model.Quantity</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Priority:</td>
+                                    <td>
+                                        <span class="badge bg-@(Model.Priority == "Urgent" ? "danger" :
+                                                                Model.Priority == "High" ? "warning" :
+                                                                Model.Priority == "Medium" ? "info" : "secondary")">
+                                            @Model.Priority
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Department:</td>
+                                    <td>@Model.Department</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Budget Code:</td>
+                                    <td>@(string.IsNullOrEmpty(Model.BudgetCode) ? "Not specified" : Model.BudgetCode)</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Status & Tracking</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">Request Date:</td>
+                                    <td>@Model.RequestDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Requested By:</td>
+                                    <td>@Model.RequestedBy</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Last Updated:</td>
+                                    <td>@Model.LastUpdated.ToString("yyyy-MM-dd HH:mm")</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Updated By:</td>
+                                    <td>@Model.UpdatedBy</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Expected Delivery:</td>
+                                    <td>@(Model.ExpectedDeliveryDate?.ToString("yyyy-MM-dd") ?? "Not specified")</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Business Justification -->
+                    @if (!string.IsNullOrEmpty(Model.Justification))
+                    {
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3">Business Justification</h5>
+                            <div class="p-3 bg-light rounded">
+                                @Model.Justification
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Comments -->
+                    @if (!string.IsNullOrEmpty(Model.Comment))
+                    {
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3">Additional Comments</h5>
+                            <div class="p-3 bg-light rounded">
+                                @Model.Comment
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Status Information -->
+                    <div class="mb-4">
+                        @switch (Model.Status)
+                        {
+                            case "Created":
+                                <div class="alert alert-secondary">
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>Created:</strong> This request has been created and is waiting to enter the approval workflow.
+                                </div>
+                                break;
+                            case "PendingApproval":
+                            case "Pending":
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-clock"></i>
+                                    <strong>Pending Approval:</strong> This request is currently under review by authorized approvers.
+                                </div>
+                                break;
+                            case "Approved":
+                                <div class="alert alert-success">
+                                    <i class="bi bi-check-circle"></i>
+                                    <strong>Approved:</strong> This request has been approved and is ready for Purchase Order creation.
+                                </div>
+                                break;
+                            case "Rejected":
+                                <div class="alert alert-danger">
+                                    <i class="bi bi-x-circle"></i>
+                                    <strong>Rejected:</strong> This request has been rejected and will not proceed further.
+                                </div>
+                                break;
+                            case "PurchaseOrderCreated":
+                                <div class="alert alert-info">
+                                    <i class="bi bi-file-text"></i>
+                                    <strong>Purchase Order Created:</strong> A Purchase Order has been created based on this request.
+                                </div>
+                                break;
+                            case "Cancelled":
+                                <div class="alert alert-dark">
+                                    <i class="bi bi-dash-circle"></i>
+                                    <strong>Cancelled:</strong> This request has been cancelled.
+                                </div>
+                                break;
+                        }
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between flex-wrap gap-2">
+                                <!-- Left side - Back button -->
+                                <div>
+                                    <a asp-action="All" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Back to List
+                                    </a>
+                                </div>
+
+                                <!-- Right side - Action buttons -->
+                                <div class="d-flex gap-2 flex-wrap">
+                                    @if (Model.CanApprove)
+                                    {
+                                        <form asp-action="Approve" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-success"
+                                                    onclick="return confirm('Are you sure you want to approve this request? This action cannot be undone.')">
+                                                <i class="bi bi-check-circle"></i> Approve
+                                            </button>
+                                        </form>
+
+                                        <form asp-action="Reject" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-danger"
+                                                    onclick="return confirm('Are you sure you want to reject this request? This action cannot be undone.')">
+                                                <i class="bi bi-x-circle"></i> Reject
+                                            </button>
+                                        </form>
+                                    }
+
+                                    @if (Model.CanCreatePO)
+                                    {
+                                        <a asp-controller="PurchaseOrder" asp-action="Create" asp-route-id="@Model.Id"
+                                           class="btn btn-primary">
+                                            <i class="bi bi-file-plus"></i> Create Purchase Order
+                                        </a>
+                                    }
+
+                                    @if (Model.CanCancel)
+                                    {
+                                        <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-warning"
+                                                    onclick="return confirm('Are you sure you want to cancel this request?')">
+                                                <i class="bi bi-x-square"></i> Cancel Request
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

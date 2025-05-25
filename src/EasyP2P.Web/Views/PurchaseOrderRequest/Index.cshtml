@@ -1,0 +1,122 @@
+﻿@model IEnumerable<EasyP2P.Web.Models.PurchaseOrderRequestViewModel>
+
+@{
+    ViewData["Title"] = "Purchase Order Requests - Pending Approval";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Pending Purchase Order Requests</h2>
+        <div>
+            <a asp-action="All" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-list"></i> View All Requests
+            </a>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> New Request
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow">
+        <div class="card-header bg-warning text-dark">
+            <h5>
+                <i class="bi bi-clock"></i> Requests Awaiting Approval
+                <span class="badge bg-dark">@Model.Count()</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Priority</th>
+                                <th>Department</th>
+                                <th>Request Date</th>
+                                <th>Requested By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.OrderByDescending(x => x.RequestDate))
+                            {
+                                <tr class="@(item.Priority == "Urgent" ? "table-warning" : "")">
+                                    <td>
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none">
+                                            #@item.Id
+                                        </a>
+                                    </td>
+                                    <td>@item.ItemName</td>
+                                    <td>@item.Quantity</td>
+                                    <td>
+                                        <span class="badge bg-@(item.Priority == "Urgent" ? "danger" :
+                                                                item.Priority == "High" ? "warning" :
+                                                                item.Priority == "Medium" ? "info" : "secondary")">
+                                            @item.Priority
+                                        </span>
+                                    </td>
+                                    <td>@item.Department</td>
+                                    <td>@item.RequestDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>@item.RequestedBy</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@item.Id"
+                                               class="btn btn-info btn-sm">
+                                                <i class="bi bi-eye"></i> Details
+                                            </a>
+                                            <form asp-action="Approve" asp-route-id="@item.Id" method="post" style="display: inline;">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-success btn-sm"
+                                                        onclick="return confirm('Approve request #@item.Id for @item.ItemName?')"
+                                                        title="Approve">
+                                                    <i class="bi bi-check"></i>
+                                                </button>
+                                            </form>
+                                            <form asp-action="Reject" asp-route-id="@item.Id" method="post" style="display: inline;">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-danger btn-sm"
+                                                        onclick="return confirm('Reject request #@item.Id for @item.ItemName?')"
+                                                        title="Reject">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h4 class="text-muted mt-3">No Pending Requests</h4>
+                    <p class="text-muted">All purchase order requests have been processed.</p>
+                    <a asp-action="All" class="btn btn-outline-primary">View All Requests</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

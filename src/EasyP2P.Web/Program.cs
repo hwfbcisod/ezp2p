@@ -1,6 +1,7 @@
 using EasyP2P.Web.Data.Repositories.Interfaces;
 using EasyP2P.Web.Data.Repositories;
 using EasyP2P.Web.Repositories;
+using EasyP2P.Web.Services;
 
 namespace EasyP2P.Web;
 
@@ -14,7 +15,12 @@ public class Program
         builder.Services.AddControllersWithViews();
         builder.Services.AddScoped<IPurchaseOrderRequestRepository, PostgresPurchaseOrderRequestRepository>();
         builder.Services.AddScoped<IPurchaseOrderRepository, PostgresPurchaseOrderRepository>();
-
+        builder.Services.AddScoped<IPurchaseOrderRequestService, PurchaseOrderRequestService>();
+        builder.Services.AddMemoryCache();
+        builder.Services.AddLogging(builder => {
+            builder.AddConsole();
+            builder.AddDebug();
+        });
 
         var app = builder.Build();
 

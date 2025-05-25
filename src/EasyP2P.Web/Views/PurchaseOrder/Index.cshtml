@@ -92,7 +92,9 @@
                     <select class="form-select form-select-sm filter-input" id="filterStatus">
                         <option value="">All Statuses</option>
                         <option value="Created">Created</option>
+                        <option value="PendingApproval">Pending Approval</option>
                         <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
                         <option value="Cancelled">Cancelled</option>
                         <option value="Completed">Completed</option>
                     </select>
@@ -225,11 +227,37 @@
                                             <a asp-action="ExportPdf" asp-route-id="@item.Id" class="btn btn-secondary btn-sm ms-1">
                                                 <i class="bi bi-file-earmark-pdf"></i> PDF
                                             </a>
-                                            @if (item.Status != "Cancelled")
+
+                                            @if (item.Status == "PendingApproval")
                                             {
-                                                <a asp-action="Cancel" asp-route-id="@item.Id" class="btn btn-warning btn-sm ms-1">
-                                                    Cancel
-                                                </a>
+                                                <form asp-action="Approve" asp-route-id="@item.Id" method="post" style="display: inline;" class="ms-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-success btn-sm"
+                                                            onclick="return confirm('Approve purchase order #@item.Id?')"
+                                                            title="Approve">
+                                                        <i class="bi bi-check"></i>
+                                                    </button>
+                                                </form>
+                                                <form asp-action="Reject" asp-route-id="@item.Id" method="post" style="display: inline;" class="ms-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-danger btn-sm"
+                                                            onclick="return confirm('Reject purchase order #@item.Id?')"
+                                                            title="Reject">
+                                                        <i class="bi bi-x"></i>
+                                                    </button>
+                                                </form>
+                                            }
+
+                                            @if (item.Status != "Cancelled" && item.Status != "Rejected" && item.Status != "ClosedCompleted")
+                                            {
+                                                <form asp-action="Cancel" asp-route-id="@item.Id" method="post" style="display: inline;" class="ms-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-warning btn-sm"
+                                                            onclick="return confirm('Cancel purchase order #@item.Id?')"
+                                                            title="Cancel">
+                                                        <i class="bi bi-x-square"></i>
+                                                    </button>
+                                                </form>
                                             }
                                         </div>
                                     </td>
@@ -255,22 +283,22 @@
         text-decoration: none !important;
     }
 
-    .sort-btn:hover {
-        color: #0d6efd;
-    }
+        .sort-btn:hover {
+            color: #0d6efd;
+        }
 
-    .sort-btn.active {
-        color: #0d6efd;
-    }
+        .sort-btn.active {
+            color: #0d6efd;
+        }
 
     .filter-input {
         transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
     }
 
-    .filter-input:focus {
-        border-color: #86b7fe;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-    }
+        .filter-input:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
 
     .table tbody tr.filtered-out {
         display: none;

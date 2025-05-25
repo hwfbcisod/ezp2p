@@ -217,29 +217,33 @@ public class PurchaseOrderController : Controller
         return View(model);
     }
 
-    // POST: PurchaseOrder/Create
+    // Enhanced Create method that properly updates POR status
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(PurchaseOrderModel model)
     {
         if (ModelState.IsValid)
         {
-            // Ensure the total price is correct
             model.TotalPrice = model.Quantity * model.UnitPrice;
 
             try
             {
-                // In a real application, get the current user's username
-                string currentUser = "CurrentUser"; // Replace with actual user name
+                string currentUser = "CurrentUser"; // Replace with actual user
 
                 // Create the purchase order
                 int orderId = await _purchaseOrderRepository.CreateAsync(model, currentUser);
-                await _purchaseOrderRepository.UpdateStatusAsync(orderId, Enums.PurchaseOrderState.PendingApproval);
 
-                _logger.LogInformation("Purchase order created with ID: {OrderId}", orderId);
-                TempData["SuccessMessage"] = "Purchase order created successfully.";
+                // Update the corresponding POR status to "PurchaseOrderCreated"
+                await _purchaseOrderRequestRepository.UpdateStatusAsync(
+                    model.PurchaseOrderRequestId,
+                    PurchaseOrderRequestState.PurchaseOrderCreated,
+                    currentUser);
 
-                return RedirectToAction(nameof(Index));
+                _logger.LogInformation("Purchase order created with ID: {OrderId} for POR: {PorId}",
+                    orderId, model.PurchaseOrderRequestId);
+
+                TempData["SuccessMessage"] = $"Purchase order #{orderId} created successfully.";
+                return RedirectToAction(nameof(Details), new { id = orderId });
             }
             catch (Exception ex)
             {

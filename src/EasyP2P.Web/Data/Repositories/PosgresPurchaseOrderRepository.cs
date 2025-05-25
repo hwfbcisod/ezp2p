@@ -2,6 +2,7 @@
 using EasyP2P.Web.Enums;
 using EasyP2P.Web.Models;
 using Npgsql;
+using System.Data;
 
 namespace EasyP2P.Web.Repositories;
 
@@ -184,7 +185,7 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
                     command.Parameters.AddWithValue("supplier", model.Supplier);
                     command.Parameters.AddWithValue("order_date", DateTime.Now);
                     command.Parameters.AddWithValue("created_by", createdBy);
-                    command.Parameters.AddWithValue("status", "Created");
+                    command.Parameters.AddWithValue("status", Enum.GetName(PurchaseOrderState.PendingApproval));
 
                     // Execute the command and get the newly created ID
                     var result = await command.ExecuteScalarAsync();
@@ -252,21 +253,20 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
         }
     }
 
-    // Helper method to map data reader to view model
     private PurchaseOrderViewModel MapToViewModel(NpgsqlDataReader reader)
     {
         return new PurchaseOrderViewModel
         {
-            Id = reader.GetInt32(reader.GetOrdinal("id")),
-            PurchaseOrderRequestId = reader.GetInt32(reader.GetOrdinal("purchase_order_request_id")),
-            ItemName = reader.GetString(reader.GetOrdinal("item_name")),
-            Quantity = reader.GetInt32(reader.GetOrdinal("quantity")),
-            UnitPrice = reader.GetDecimal(reader.GetOrdinal("unit_price")),
-            TotalPrice = reader.GetDecimal(reader.GetOrdinal("total_price")),
-            Supplier = reader.GetString(reader.GetOrdinal("supplier")),
-            OrderDate = reader.GetDateTime(reader.GetOrdinal("order_date")),
-            CreatedBy = reader.GetString(reader.GetOrdinal("created_by")),
-            Status = reader.GetString(reader.GetOrdinal("status"))
+            Id = reader.GetInt32("id"),
+            PurchaseOrderRequestId = reader.GetInt32("purchase_order_request_id"),
+            ItemName = reader.GetString("item_name"),
+            Quantity = reader.GetInt32("quantity"),
+            UnitPrice = reader.GetDecimal("unit_price"),
+            TotalPrice = reader.GetDecimal("total_price"),
+            Supplier = reader.GetString("supplier"),
+            OrderDate = reader.GetDateTime("order_date"),
+            CreatedBy = reader.GetString("created_by"),
+            Status = reader.GetString("status")
         };
     }
 }

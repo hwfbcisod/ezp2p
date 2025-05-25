@@ -1,0 +1,138 @@
+﻿@model EasyP2P.Web.Models.PurchaseOrderRequestInputModel
+
+@{
+    ViewData["Title"] = "Create Purchase Order Request";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-plus-circle"></i> Create Purchase Order Request</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label asp-for="ItemName" class="form-label fw-bold"></label>
+                                    <input asp-for="ItemName" class="form-control" placeholder="Enter the item name" />
+                                    <span asp-validation-for="ItemName" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label asp-for="Quantity" class="form-label fw-bold"></label>
+                                    <input asp-for="Quantity" class="form-control" type="number" min="1" placeholder="1" />
+                                    <span asp-validation-for="Quantity" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Priority" class="form-label fw-bold"></label>
+                                    <select asp-for="Priority" class="form-select">
+                                        <option value="">Select Priority</option>
+                                        @foreach (var priority in ViewBag.Priorities as List<string>)
+                                        {
+                                            <option value="@priority">@priority</option>
+                                        }
+                                    </select>
+                                    <span asp-validation-for="Priority" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Department" class="form-label fw-bold"></label>
+                                    <select asp-for="Department" class="form-select">
+                                        <option value="">Select Department</option>
+                                        @foreach (var dept in ViewBag.Departments as List<string>)
+                                        {
+                                            <option value="@dept">@dept</option>
+                                        }
+                                    </select>
+                                    <span asp-validation-for="Department" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="BudgetCode" class="form-label fw-bold"></label>
+                                    <input asp-for="BudgetCode" class="form-control" placeholder="e.g., IT-2025-001" />
+                                    <span asp-validation-for="BudgetCode" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="ExpectedDeliveryDate" class="form-label fw-bold"></label>
+                                    <input asp-for="ExpectedDeliveryDate" class="form-control" type="date" />
+                                    <span asp-validation-for="ExpectedDeliveryDate" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Justification" class="form-label fw-bold"></label>
+                            <textarea asp-for="Justification" class="form-control" rows="4"
+                                      placeholder="Provide business justification for this request..."></textarea>
+                            <span asp-validation-for="Justification" class="text-danger"></span>
+                            <div class="form-text">Explain why this purchase is necessary for business operations.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Comment" class="form-label fw-bold"></label>
+                            <textarea asp-for="Comment" class="form-control" rows="3"
+                                      placeholder="Any additional comments or special requirements..."></textarea>
+                            <span asp-validation-for="Comment" class="text-danger"></span>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Next Steps:</strong> After submission, your request will be reviewed by the appropriate approvers.
+                            You will be notified of the approval status and can track progress in the system.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Submit Request
+                            </button>
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        // Auto-generate budget code based on department and current year
+        document.getElementById('Department').addEventListener('change', function() {
+            const dept = this.value;
+            const year = new Date().getFullYear();
+            const budgetCode = document.getElementById('BudgetCode');
+            if (dept && !budgetCode.value) {
+                const deptCode = dept.substring(0, 3).toUpperCase();
+                budgetCode.value = `${deptCode}-${year}-001`;
+            }
+        });
+
+        // Set minimum date for expected delivery to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('ExpectedDeliveryDate').min = tomorrow.toISOString().split('T')[0];
+    </script>
+}

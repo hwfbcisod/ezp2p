@@ -1,0 +1,332 @@
+﻿@model IEnumerable<EasyP2P.Web.Models.PurchaseOrderRequestViewModel>
+
+@{
+    ViewData["Title"] = "All Purchase Order Requests";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>All Purchase Order Requests</h2>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-warning me-2">
+                <i class="bi bi-clock"></i> Pending Requests
+            </a>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> New Request
+            </a>
+            <form asp-action="AddSample" method="post" style="display: inline;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-secondary">
+                    <i class="bi bi-database-add"></i> Add Sample Data
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Status Summary Cards -->
+    <div class="row mb-4">
+        @{
+            var statusGroups = Model.GroupBy(x => x.Status).ToDictionary(g => g.Key, g => g.Count());
+        }
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">@(statusGroups.GetValueOrDefault("PendingApproval", 0))</h5>
+                    <p class="card-text">Pending</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-success">@(statusGroups.GetValueOrDefault("Approved", 0))</h5>
+                    <p class="card-text">Approved</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-danger">@(statusGroups.GetValueOrDefault("Rejected", 0))</h5>
+                    <p class="card-text">Rejected</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-info">@(statusGroups.GetValueOrDefault("PurchaseOrderCreated", 0))</h5>
+                    <p class="card-text">PO Created</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-dark">@(statusGroups.GetValueOrDefault("Cancelled", 0))</h5>
+                    <p class="card-text">Cancelled</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">@Model.Count()</h5>
+                    <p class="card-text">Total</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#filtersCollapse" aria-expanded="false">
+                <i class="bi bi-funnel"></i> Filters
+            </button>
+        </div>
+        <div class="collapse" id="filtersCollapse">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Status</label>
+                        <select id="statusFilter" class="form-select filter-input">
+                            <option value="">All Statuses</option>
+                            <option value="PendingApproval">Pending Approval</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="PurchaseOrderCreated">PO Created</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Priority</label>
+                        <select id="priorityFilter" class="form-select filter-input">
+                            <option value="">All Priorities</option>
+                            <option value="Urgent">Urgent</option>
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Department</label>
+                        <select id="departmentFilter" class="form-select filter-input">
+                            <option value="">All Departments</option>
+                            @foreach (var dept in Model.Select(x => x.Department).Distinct().OrderBy(x => x))
+                            {
+                                <option value="@dept">@dept</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Item Search</label>
+                        <input type="text" id="itemFilter" class="form-control filter-input" placeholder="Search items...">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5>
+                <i class="bi bi-list-ul"></i> All Purchase Order Requests
+                <span class="badge bg-light text-dark" id="totalCount">@Model.Count()</span>
+                <span class="badge bg-warning text-dark" id="filteredBadge" style="display: none;">Filtered</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover" id="requestsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Priority</th>
+                                <th>Department</th>
+                                <th>Status</th>
+                                <th>Request Date</th>
+                                <th>Requested By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.OrderByDescending(x => x.RequestDate))
+                            {
+                                <tr data-status="@item.Status.ToLower()"
+                                    data-priority="@item.Priority.ToLower()"
+                                    data-department="@item.Department.ToLower()"
+                                    data-item="@item.ItemName.ToLower()"
+                                    class="@(item.Priority == "Urgent" ? "table-warning" : "")">
+                                    <td>
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none fw-bold">
+                                            #@item.Id
+                                        </a>
+                                    </td>
+                                    <td>@item.ItemName</td>
+                                    <td>@item.Quantity</td>
+                                    <td>
+                                        <span class="badge bg-@(item.Priority == "Urgent" ? "danger" :
+                                                                item.Priority == "High" ? "warning" :
+                                                                item.Priority == "Medium" ? "info" : "secondary")">
+                                            @item.Priority
+                                        </span>
+                                    </td>
+                                    <td>@item.Department</td>
+                                    <td>
+                                        <span class="badge @item.StatusBadgeClass">
+                                            <i class="@item.StatusIcon"></i> @item.Status
+                                        </span>
+                                    </td>
+                                    <td>@item.RequestDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>@item.RequestedBy</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@item.Id"
+                                               class="btn btn-info btn-sm">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            @if (item.CanCreatePO)
+                                            {
+                                                <a asp-controller="PurchaseOrder" asp-action="Create" asp-route-id="@item.Id"
+                                                   class="btn btn-primary btn-sm">
+                                                    <i class="bi bi-file-plus"></i>
+                                                </a>
+                                            }
+                                            @if (item.CanApprove)
+                                            {
+                                                <form asp-action="Approve" asp-route-id="@item.Id" method="post" style="display: inline;">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-success btn-sm"
+                                                            onclick="return confirm('Approve request #@item.Id?')"
+                                                            title="Approve">
+                                                        <i class="bi bi-check"></i>
+                                                    </button>
+                                                </form>
+                                                <form asp-action="Reject" asp-route-id="@item.Id" method="post" style="display: inline;">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-danger btn-sm"
+                                                            onclick="return confirm('Reject request #@item.Id?')"
+                                                            title="Reject">
+                                                        <i class="bi bi-x"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h4 class="text-muted mt-3">No Requests Found</h4>
+                    <p class="text-muted">Create your first purchase order request to get started.</p>
+                    <a asp-action="Create" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Create First Request
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterInputs = document.querySelectorAll('.filter-input');
+        const tableRows = document.querySelectorAll('#requestsTable tbody tr');
+        const totalCount = tableRows.length;
+        const filteredBadge = document.getElementById('filteredBadge');
+        const totalCountSpan = document.getElementById('totalCount');
+
+        function applyFilters() {
+            const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+            const priorityFilter = document.getElementById('priorityFilter').value.toLowerCase();
+            const departmentFilter = document.getElementById('departmentFilter').value.toLowerCase();
+            const itemFilter = document.getElementById('itemFilter').value.toLowerCase();
+
+            let visibleCount = 0;
+            let hasActiveFilters = statusFilter || priorityFilter || departmentFilter || itemFilter;
+
+            tableRows.forEach(row => {
+                const status = row.dataset.status;
+                const priority = row.dataset.priority;
+                const department = row.dataset.department;
+                const item = row.dataset.item;
+
+                let isVisible = true;
+
+                if (statusFilter && status !== statusFilter) isVisible = false;
+                if (priorityFilter && priority !== priorityFilter) isVisible = false;
+                if (departmentFilter && department !== departmentFilter) isVisible = false;
+                if (itemFilter && !item.includes(itemFilter)) isVisible = false;
+
+                if (isVisible) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update badges
+            if (hasActiveFilters) {
+                filteredBadge.style.display = 'inline-block';
+                totalCountSpan.textContent = visibleCount;
+            } else {
+                filteredBadge.style.display = 'none';
+                totalCountSpan.textContent = totalCount;
+            }
+        }
+
+        filterInputs.forEach(input => {
+            input.addEventListener('input', applyFilters);
+            input.addEventListener('change', applyFilters);
+        });
+    });
+</script>
+
+<style>
+    .table tbody tr.table-warning {
+        --bs-table-accent-bg: var(--bs-warning-bg-subtle);
+    }
+
+    .card {
+        transition: all 0.3s ease;
+    }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+    .badge {
+        font-size: 0.75em;
+    }
+
+    .filter-input {
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+        .filter-input:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+</style>
