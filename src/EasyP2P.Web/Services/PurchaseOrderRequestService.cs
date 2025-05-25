@@ -1,6 +1,8 @@
 ﻿using EasyP2P.Web.Data.Repositories.Interfaces;
 using EasyP2P.Web.Enums;
 using EasyP2P.Web.Models;
+using EasyP2P.Web.Extensions;
+using System.ComponentModel.DataAnnotations;
 
 namespace EasyP2P.Web.Services;
 
@@ -14,7 +16,11 @@ public interface IPurchaseOrderRequestService
     Task<bool> CancelRequestAsync(int id, string cancelledBy, string? cancellationReason = null);
     Task<bool> MarkPurchaseOrderCreatedAsync(int id, string updatedBy);
     Task<ValidationResult> ValidateRequestAsync(PurchaseOrderRequestInputModel model);
-    //Task<IEnumerable<PurchaseOrderRequestViewModel>> GetDashboardDataAsync(string? userFilter = null);
+    Task<IEnumerable<PurchaseOrderRequestViewModel>> GetDashboardDataAsync(string? userFilter = null);
+    Task<PurchaseOrderRequestViewModel?> GetRequestByIdAsync(int id);
+    Task<IEnumerable<PurchaseOrderRequestViewModel>> GetAllRequestsAsync();
+    Task<IEnumerable<PurchaseOrderRequestViewModel>> GetRequestsByStatusAsync(PurchaseOrderRequestState status);
+    Task<int> CreateRequestAsync(PurchaseOrderRequestInputModel model, string requestedBy);
 }
 
 public class PurchaseOrderRequestService : IPurchaseOrderRequestService
@@ -112,6 +118,50 @@ public class PurchaseOrderRequestService : IPurchaseOrderRequestService
         }
     }
 
+    public async Task<int> CreateRequestAsync(PurchaseOrderRequestInputModel model, string requestedBy)
+    {
+        try
+        {
+            _logger.LogInformation("Creating purchase order request for item {ItemName} by {User}",
+                model.ItemName, requestedBy);
+
+            // Validate the request using business rules
+            var validationResult = await ValidateRequestAsync(model);
+            if (!validationResult.IsValid)
+            {
+                var errorMessage = $"Validation failed: {string.Join(", ", validationResult.Errors)}";
+                _logger.LogWarning("Validation failed for purchase order request: {Errors}", errorMessage);
+                throw new ValidationException(errorMessage);
+            }
+
+            // Log warnings but don't block creation
+            if (validationResult.Warnings.Any())
+            {
+                _logger.LogWarning("Purchase order request has warnings: {Warnings}",
+                    string.Join(", ", validationResult.Warnings));
+            }
+
+            // Create the request through repository
+            var id = await _repository.CreateAsync(model, requestedBy);
+
+            _logger.LogInformation("Purchase Order Request created successfully with ID {Id} by {User}",
+                id, requestedBy);
+
+            return id;
+        }
+        catch (ValidationException)
+        {
+            // Re-throw validation exceptions as-is
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating purchase order request for item {ItemName} by {User}",
+                model.ItemName, requestedBy);
+            throw new InvalidOperationException("Failed to create purchase order request", ex);
+        }
+    }
+
     public async Task<bool> MarkPurchaseOrderCreatedAsync(int id, string updatedBy)
     {
         try
@@ -169,19 +219,80 @@ public class PurchaseOrderRequestService : IPurchaseOrderRequestService
         return result;
     }
 
-    //public async Task<IEnumerable<PurchaseOrderRequestViewModel>> GetDashboardDataAsync(string? userFilter = null)
-    //{
-    //    var requests = await _repository.GetRequestsRequiringAttentionAsync();
+    public async Task<IEnumerable<PurchaseOrderRequestViewModel>> GetDashboardDataAsync(string? userFilter = null)
+    {
+        try
+        {
+            // Get all requests that require attention (pending, urgent, etc.)
+            var allRequests = await _repository.GetAllAsync();
+            var viewModels = allRequests.ToViewModels();
 
-    //    if (!string.IsNullOrEmpty(userFilter))
-    //    {
-    //        requests = requests.Where(r => r.RequestedBy.Equals(userFilter, StringComparison.OrdinalIgnoreCase));
-    //    }
+            // Filter requests that require attention
+            var requestsRequiringAttention = viewModels.Where(r =>
+                r.Status == "PendingApproval" ||
+                r.Priority == "Urgent" ||
+                (r.ExpectedDeliveryDate.HasValue && r.ExpectedDeliveryDate.Value <= DateTime.Today.AddDays(3))
+            );
 
-    //    return requests.OrderByDescending(r => r.Priority == "Urgent")
-    //                  .ThenByDescending(r => r.Priority == "High")
-    //                  .ThenBy(r => r.RequestDate);
-    //}
+            if (!string.IsNullOrEmpty(userFilter))
+            {
+                requestsRequiringAttention = requestsRequiringAttention.Where(r =>
+                    r.RequestedBy.Equals(userFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return requestsRequiringAttention
+                .OrderByDescending(r => r.Priority == "Urgent")
+                .ThenByDescending(r => r.Priority == "High")
+                .ThenBy(r => r.RequestDate);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving dashboard data");
+            return Enumerable.Empty<PurchaseOrderRequestViewModel>();
+        }
+    }
+
+    public async Task<PurchaseOrderRequestViewModel?> GetRequestByIdAsync(int id)
+    {
+        try
+        {
+            var dbModel = await _repository.GetByIdAsync(id);
+            return dbModel?.ToViewModel();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving request {Id}", id);
+            return null;
+        }
+    }
+
+    public async Task<IEnumerable<PurchaseOrderRequestViewModel>> GetAllRequestsAsync()
+    {
+        try
+        {
+            var dbModels = await _repository.GetAllAsync();
+            return dbModels.ToViewModels();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving all requests");
+            return Enumerable.Empty<PurchaseOrderRequestViewModel>();
+        }
+    }
+
+    public async Task<IEnumerable<PurchaseOrderRequestViewModel>> GetRequestsByStatusAsync(PurchaseOrderRequestState status)
+    {
+        try
+        {
+            var dbModels = await _repository.GetByStatusAsync(status);
+            return dbModels.ToViewModels();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving requests with status {Status}", status);
+            return Enumerable.Empty<PurchaseOrderRequestViewModel>();
+        }
+    }
 }
 
 public class ValidationResult

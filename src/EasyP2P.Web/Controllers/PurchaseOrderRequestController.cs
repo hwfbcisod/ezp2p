@@ -2,6 +2,7 @@
 using EasyP2P.Web.Enums;
 using EasyP2P.Web.Extensions;
 using EasyP2P.Web.Models;
+using EasyP2P.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EasyP2P.Web.Controllers;
@@ -9,42 +10,33 @@ namespace EasyP2P.Web.Controllers;
 public class PurchaseOrderRequestController : Controller
 {
     private readonly ILogger<PurchaseOrderRequestController> _logger;
-    private readonly IPurchaseOrderRequestRepository _purchaseOrderRequestRepository;
+    private readonly IPurchaseOrderRequestService _purchaseOrderRequestService;
 
     public PurchaseOrderRequestController(
         ILogger<PurchaseOrderRequestController> logger,
-        IPurchaseOrderRequestRepository purchaseOrderRequestRepository)
+        IPurchaseOrderRequestService purchaseOrderRequestService)
     {
         _logger = logger;
-        _purchaseOrderRequestRepository = purchaseOrderRequestRepository;
+        _purchaseOrderRequestService = purchaseOrderRequestService;
     }
 
     public async Task<IActionResult> Index()
     {
-        var pendingRequests = await _purchaseOrderRequestRepository.GetByStatusAsync(PurchaseOrderRequestState.PendingApproval);
-        var viewModels = pendingRequests.ToViewModels();
+        var pendingRequests = await _purchaseOrderRequestService.GetRequestsByStatusAsync(
+            Enums.PurchaseOrderRequestState.PendingApproval);
 
-        return View(viewModels);
-    }
-
-    public async Task<IActionResult> All()
-    {
-        var allRequests = await _purchaseOrderRequestRepository.GetAllAsync();
-        var viewModels = allRequests.ToViewModels();
-
-        return View(viewModels);
+        return View(pendingRequests);
     }
 
     public async Task<IActionResult> Details(int id)
     {
-        var request = await _purchaseOrderRequestRepository.GetByIdAsync(id);
+        var request = await _purchaseOrderRequestService.GetRequestByIdAsync(id);
         if (request == null)
         {
             return NotFound();
         }
 
-        var viewModel = request.ToViewModel();
-        return View(viewModel);
+        return View(request);
     }
 
     public IActionResult Create()
@@ -60,21 +52,41 @@ public class PurchaseOrderRequestController : Controller
     {
         if (ModelState.IsValid)
         {
-            try
+            // Validate using service layer business rules
+            var validationResult = await _purchaseOrderRequestService.ValidateRequestAsync(model);
+
+            if (!validationResult.IsValid)
             {
-                string currentUser = "CurrentUser"; // Replace with actual user
-                var id = await _purchaseOrderRequestRepository.CreateAsync(model, currentUser);
+                foreach (var error in validationResult.Errors)
+                {
+                    ModelState.AddModelError("", error);
+                }
 
-                _logger.LogInformation("New POR created with ID {Id}: Item={ItemName}, Quantity={Quantity}",
-                    id, model.ItemName, model.Quantity);
-
-                TempData["SuccessMessage"] = $"Purchase Order Request #{id} created successfully and is pending approval!";
-                return RedirectToAction(nameof(Details), new { id });
+                // Add warnings as informational messages
+                foreach (var warning in validationResult.Warnings)
+                {
+                    TempData["WarningMessage"] = warning;
+                }
             }
-            catch (Exception ex)
+
+            if (ModelState.IsValid)
             {
-                _logger.LogError(ex, "Error creating purchase order request");
-                ModelState.AddModelError("", "An error occurred while creating the request.");
+                try
+                {
+                    string currentUser = "CurrentUser"; // Replace with actual user
+                    var id = await _purchaseOrderRequestService.CreateRequestAsync(model, currentUser);
+
+                    _logger.LogInformation("New POR created with ID {Id}: Item={ItemName}, Quantity={Quantity}",
+                        id, model.ItemName, model.Quantity);
+
+                    TempData["SuccessMessage"] = $"Purchase Order Request #{id} created successfully and is pending approval!";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error creating purchase order request");
+                    ModelState.AddModelError("", "An error occurred while creating the request.");
+                }
             }
         }
 
@@ -91,23 +103,16 @@ public class PurchaseOrderRequestController : Controller
         {
             string currentUser = "ApproverUser"; // Replace with actual user
 
-            if (!await _purchaseOrderRequestRepository.CanTransitionToStatus(id, PurchaseOrderRequestState.Approved))
-            {
-                TempData["ErrorMessage"] = "This request cannot be approved in its current state.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
-            var success = await _purchaseOrderRequestRepository.UpdateStatusAsync(id, PurchaseOrderRequestState.Approved, currentUser);
+            var success = await _purchaseOrderRequestService.ApproveRequestAsync(id, currentUser);
 
             if (success)
             {
-                _logger.LogInformation("Purchase Order Request {Id} approved by {User}", id, currentUser);
                 TempData["SuccessMessage"] = $"Purchase Order Request #{id} has been approved successfully.";
                 TempData["CreatePOLink"] = id; // For direct PO creation link
             }
             else
             {
-                TempData["ErrorMessage"] = "Failed to approve the request.";
+                TempData["ErrorMessage"] = "Failed to approve the request. It may not be in the correct state for approval.";
             }
         }
         catch (Exception ex)
@@ -126,23 +131,17 @@ public class PurchaseOrderRequestController : Controller
         try
         {
             string currentUser = "ApproverUser"; // Replace with actual user
+            string rejectionReason = "Rejected via web interface"; // Could be from form input
 
-            if (!await _purchaseOrderRequestRepository.CanTransitionToStatus(id, PurchaseOrderRequestState.Rejected))
-            {
-                TempData["ErrorMessage"] = "This request cannot be rejected in its current state.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
-            var success = await _purchaseOrderRequestRepository.UpdateStatusAsync(id, PurchaseOrderRequestState.Rejected, currentUser);
+            var success = await _purchaseOrderRequestService.RejectRequestAsync(id, currentUser, rejectionReason);
 
             if (success)
             {
-                _logger.LogInformation("Purchase Order Request {Id} rejected by {User}", id, currentUser);
                 TempData["SuccessMessage"] = $"Purchase Order Request #{id} has been rejected.";
             }
             else
             {
-                TempData["ErrorMessage"] = "Failed to reject the request.";
+                TempData["ErrorMessage"] = "Failed to reject the request. It may not be in the correct state for rejection.";
             }
         }
         catch (Exception ex)
@@ -161,23 +160,17 @@ public class PurchaseOrderRequestController : Controller
         try
         {
             string currentUser = "CurrentUser"; // Replace with actual user
+            string cancellationReason = "Cancelled via web interface"; // Could be from form input
 
-            if (!await _purchaseOrderRequestRepository.CanTransitionToStatus(id, PurchaseOrderRequestState.Cancelled))
-            {
-                TempData["ErrorMessage"] = "This request cannot be cancelled in its current state.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
-            var success = await _purchaseOrderRequestRepository.UpdateStatusAsync(id, PurchaseOrderRequestState.Cancelled, currentUser);
+            var success = await _purchaseOrderRequestService.CancelRequestAsync(id, currentUser, cancellationReason);
 
             if (success)
             {
-                _logger.LogInformation("Purchase Order Request {Id} cancelled by {User}", id, currentUser);
                 TempData["SuccessMessage"] = $"Purchase Order Request #{id} has been cancelled.";
             }
             else
             {
-                TempData["ErrorMessage"] = "Failed to cancel the request.";
+                TempData["ErrorMessage"] = "Failed to cancel the request. It may not be in the correct state for cancellation.";
             }
         }
         catch (Exception ex)
@@ -222,10 +215,19 @@ public class PurchaseOrderRequestController : Controller
 
         foreach (var request in sampleRequests)
         {
-            await _purchaseOrderRequestRepository.CreateAsync(request, "SampleUser");
+            await _purchaseOrderRequestService.CreateRequestAsync(request, "SampleUser");
         }
 
         TempData["SuccessMessage"] = $"Added {sampleRequests.Length} sample purchase order requests.";
-        return RedirectToAction(nameof(All));
+        return RedirectToAction(nameof(Index));
+    }
+
+    // Dashboard action utilizing service layer
+    public async Task<IActionResult> Dashboard(string? userFilter = null)
+    {
+        var dashboardData = await _purchaseOrderRequestService.GetDashboardDataAsync(userFilter);
+
+        ViewBag.UserFilter = userFilter;
+        return View(dashboardData);
     }
 }
