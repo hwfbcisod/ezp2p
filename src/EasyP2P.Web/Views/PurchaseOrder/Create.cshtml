@@ -1,4 +1,4 @@
-﻿// Updated Views/PurchaseOrder/Create.cshtml
+﻿<!-- Updated Views/PurchaseOrder/Create.cshtml with supplier integration -->
 @model EasyP2P.Web.Models.PurchaseOrderModel
 
 @{
@@ -29,6 +29,45 @@
                             <span asp-validation-for="Quantity" class="text-danger"></span>
                         </div>
 
+                        <!-- NEW: Supplier Selection -->
+                        <div class="mb-3">
+                            <label asp-for="Supplier" class="form-label fw-bold">
+                                Supplier <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="Supplier" asp-items="ViewBag.Suppliers" class="form-select" id="supplierSelect">
+                            </select>
+                            <span asp-validation-for="Supplier" class="text-danger"></span>
+
+                            <!-- NEW: Supplier Information Display -->
+                            <div id="supplierInfo" class="mt-2" style="display: none;">
+                                <div class="card border-info">
+                                    <div class="card-body p-2">
+                                        <h6 class="card-title mb-1">Supplier Information</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <small><strong>Contact:</strong> <span id="supplierContact"></span></small><br>
+                                                <small><strong>Email:</strong> <span id="supplierEmail"></span></small>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small><strong>Phone:</strong> <span id="supplierPhone"></span></small><br>
+                                                <small><strong>Payment Terms:</strong> <span id="supplierTerms"></span></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- NEW: Link to create new supplier -->
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    Don't see your supplier?
+                                    <a href="/Supplier/Create" target="_blank" class="text-decoration-none">
+                                        <i class="bi bi-plus-circle"></i> Add new supplier
+                                    </a>
+                                </small>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             <label asp-for="UnitPrice" class="form-label"></label>
                             <div class="input-group">
@@ -47,10 +86,23 @@
                             <span asp-validation-for="TotalPrice" class="text-danger"></span>
                         </div>
 
-                        <div class="mb-3">
-                            <label asp-for="Supplier" class="form-label"></label>
-                            <input asp-for="Supplier" class="form-control" />
-                            <span asp-validation-for="Supplier" class="text-danger"></span>
+                        <!-- NEW: Purchase Order Summary -->
+                        <div class="mb-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Purchase Order Summary</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <small><strong>Item:</strong> <span id="summaryItem">@Model.ItemName</span></small><br>
+                                            <small><strong>Quantity:</strong> <span id="summaryQuantity">@Model.Quantity</span></small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small><strong>Supplier:</strong> <span id="summarySupplier">Not selected</span></small><br>
+                                            <small><strong>Total:</strong> <span id="summaryTotal" class="fw-bold">$0.00</span></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="d-flex justify-content-between">
@@ -74,7 +126,56 @@
             var quantity = parseFloat(document.getElementById('quantity').value) || 0;
             var unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
             var totalPrice = quantity * unitPrice;
-            document.getElementById('totalPrice').value = totalPrice;
+            document.getElementById('totalPrice').value = totalPrice.toFixed(2);
+
+            // Update summary
+            document.getElementById('summaryTotal').textContent = '$' + totalPrice.toFixed(2);
+        }
+
+        // Function to handle supplier selection
+        async function handleSupplierChange() {
+            const supplierSelect = document.getElementById('supplierSelect');
+            const supplierId = supplierSelect.value;
+            const supplierInfo = document.getElementById('supplierInfo');
+
+            if (supplierId) {
+                try {
+                    // Get supplier information via AJAX
+                    const response = await fetch(`/PurchaseOrder/GetSupplierInfo?supplierId=${supplierId}`);
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const supplier = data.supplier;
+
+                        // Update supplier information display
+                        document.getElementById('supplierContact').textContent = supplier.contactPerson || 'Not provided';
+                        document.getElementById('supplierEmail').textContent = supplier.email || 'Not provided';
+                        document.getElementById('supplierPhone').textContent = supplier.phone || 'Not provided';
+                        document.getElementById('supplierTerms').textContent = supplier.paymentTerms || 'Not specified';
+
+                        // Show supplier info
+                        supplierInfo.style.display = 'block';
+
+                        // Update summary
+                        document.getElementById('summarySupplier').textContent = supplier.name;
+
+                        // Update the hidden field with supplier name for form submission
+                        document.getElementById('Supplier').value = supplier.name;
+                    } else {
+                        supplierInfo.style.display = 'none';
+                        document.getElementById('summarySupplier').textContent = 'Not selected';
+                        document.getElementById('Supplier').value = '';
+                    }
+                } catch (error) {
+                    console.error('Error fetching supplier information:', error);
+                    supplierInfo.style.display = 'none';
+                    document.getElementById('summarySupplier').textContent = 'Error loading supplier';
+                }
+            } else {
+                supplierInfo.style.display = 'none';
+                document.getElementById('summarySupplier').textContent = 'Not selected';
+                document.getElementById('Supplier').value = '';
+            }
         }
 
         // Calculate on page load
@@ -83,12 +184,71 @@
 
             // Calculate when unit price changes
             document.getElementById('unitPrice').addEventListener('input', calculateTotal);
+
+            // Handle supplier selection changes
+            document.getElementById('supplierSelect').addEventListener('change', handleSupplierChange);
         });
 
         // Add form submit handler to ensure total price is calculated before submit
         document.getElementById('purchaseOrderForm').addEventListener('submit', function(e) {
+            // Validate supplier selection
+            const supplierSelect = document.getElementById('supplierSelect');
+            if (!supplierSelect.value) {
+                e.preventDefault();
+                alert('Please select a supplier before creating the purchase order.');
+                supplierSelect.focus();
+                return false;
+            }
+
             // Recalculate total price before submission
             calculateTotal();
         });
+
+        // Add some visual feedback for form validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('purchaseOrderForm');
+            const inputs = form.querySelectorAll('input[required], select[required]');
+
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value) {
+                        this.classList.add('is-valid');
+                        this.classList.remove('is-invalid');
+                    } else {
+                        this.classList.add('is-invalid');
+                        this.classList.remove('is-valid');
+                    }
+                });
+            });
+        });
     </script>
+
+    <style>
+        .clickable-metric:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .card {
+            border-radius: 0.5rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+        .is-valid {
+            border-color: #198754;
+        }
+
+        .is-invalid {
+            border-color: #dc3545;
+        }
+
+        .supplier-info-card {
+            background-color: #f8f9fa;
+            border-left: 4px solid #0d6efd;
+        }
+    </style>
 }

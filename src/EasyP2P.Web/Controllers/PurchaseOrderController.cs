@@ -1,4 +1,6 @@
-﻿using EasyP2P.Web.Models;
+﻿// Updated Controllers/PurchaseOrderController.cs - Key changes highlighted with // NEW comments
+
+using EasyP2P.Web.Models;
 using EasyP2P.Web.Services;
 using iText.Kernel.Colors;
 using iText.Kernel.Pdf;
@@ -13,15 +15,18 @@ public class PurchaseOrderController : Controller
 {
     private readonly IPurchaseOrderService _purchaseOrderService;
     private readonly IPurchaseOrderRequestService _purchaseOrderRequestService;
+    private readonly ISupplierService _supplierService; // NEW: Supplier service
     private readonly ILogger<PurchaseOrderController> _logger;
 
     public PurchaseOrderController(
         IPurchaseOrderService purchaseOrderService,
         IPurchaseOrderRequestService purchaseOrderRequestService,
+        ISupplierService supplierService, // NEW: Inject supplier service
         ILogger<PurchaseOrderController> logger)
     {
         _purchaseOrderService = purchaseOrderService;
         _purchaseOrderRequestService = purchaseOrderRequestService;
+        _supplierService = supplierService; // NEW: Store supplier service
         _logger = logger;
     }
 
@@ -29,7 +34,6 @@ public class PurchaseOrderController : Controller
     public async Task<IActionResult> Index()
     {
         var orders = await _purchaseOrderService.GetAllOrdersAsync();
-
         return View(orders);
     }
 
@@ -92,6 +96,9 @@ public class PurchaseOrderController : Controller
             return RedirectToAction("Index");
         }
 
+        // NEW: Load suppliers for dropdown
+        await LoadSuppliersForDropdown();
+
         // Create a new model pre-filled with the request data
         var model = new PurchaseOrderModel
         {
@@ -100,7 +107,7 @@ public class PurchaseOrderController : Controller
             Quantity = request.Quantity,
             UnitPrice = 0, // User needs to fill this
             TotalPrice = 0, // Will be calculated
-            Supplier = "" // User needs to fill this
+            Supplier = "" // User needs to select this from dropdown
         };
 
         return View(model);
@@ -156,6 +163,8 @@ public class PurchaseOrderController : Controller
             }
         }
 
+        // NEW: Reload suppliers if validation fails
+        await LoadSuppliersForDropdown();
         return View(model);
     }
 
@@ -251,6 +260,70 @@ public class PurchaseOrderController : Controller
     {
         decimal totalPrice = quantity * unitPrice;
         return Json(new { totalPrice = totalPrice.ToString("C") });
+    }
+
+    // NEW: AJAX endpoint to get supplier information
+    [HttpGet]
+    public async Task<IActionResult> GetSupplierInfo(int supplierId)
+    {
+        try
+        {
+            var supplier = await _supplierService.GetSupplierByIdAsync(supplierId);
+            if (supplier == null)
+            {
+                return Json(new { success = false, message = "Supplier not found" });
+            }
+
+            return Json(new
+            {
+                success = true,
+                supplier = new
+                {
+                    id = supplier.Id,
+                    name = supplier.Name,
+                    paymentTerms = supplier.PaymentTerms,
+                    contactPerson = supplier.ContactPerson,
+                    email = supplier.Email,
+                    phone = supplier.Phone
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving supplier information for ID {SupplierId}", supplierId);
+            return Json(new { success = false, message = "Error retrieving supplier information" });
+        }
+    }
+
+    // NEW: Helper method to load suppliers for dropdown
+    private async Task LoadSuppliersForDropdown()
+    {
+        try
+        {
+            var activeSuppliers = await _supplierService.GetActiveSuppliersAsync();
+            var supplierSelectList = activeSuppliers.Select(s => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            {
+                Value = s.Id.ToString(),
+                Text = $"{s.Name} ({s.PaymentTerms})"
+            }).ToList();
+
+            // Add empty option at the beginning
+            supplierSelectList.Insert(0, new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            {
+                Value = "",
+                Text = "Select a supplier..."
+            });
+
+            ViewBag.Suppliers = supplierSelectList;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading suppliers for dropdown");
+            ViewBag.Suppliers = new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+            {
+                new() { Value = "", Text = "Error loading suppliers" }
+            };
+        }
     }
 
     // Private method for PDF generation (extracted from controller logic)

@@ -44,6 +44,14 @@
                                 Purchase Orders
                             </a>
                         </li>
+                        <!-- NEW: Supplier navigation item -->
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Supplier" ? "active" : "")"
+                               asp-controller="Supplier" asp-action="Index">
+                                <i class="bi bi-building me-1"></i>
+                                Suppliers
+                            </a>
+                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                                 <i class="bi bi-plus-circle me-1"></i>
@@ -55,15 +63,36 @@
                                         <i class="bi bi-file-plus me-2"></i>New Purchase Request
                                     </a>
                                 </li>
+                                <!-- NEW: Quick create supplier -->
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Supplier" asp-action="Create">
+                                        <i class="bi bi-building me-2"></i>New Supplier
+                                    </a>
+                                </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" href="/PurchaseOrderRequest?filter=approved">
                                         <i class="bi bi-check-circle me-2"></i>Create PO from Approved Requests
                                     </a>
                                 </li>
+                                <!-- NEW: Quick link to top rated suppliers -->
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Supplier" asp-action="TopRated">
+                                        <i class="bi bi-star me-2"></i>View Top Rated Suppliers
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                     </ul>
+
+                    <!-- NEW: Quick search for suppliers -->
+                    <div class="d-flex">
+                        <input class="form-control me-2" type="search" placeholder="Search suppliers..."
+                               id="supplierQuickSearch" style="width: 200px;">
+                        <button class="btn btn-outline-light" type="button" id="quickSearchBtn">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -91,6 +120,31 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- NEW: Quick search functionality for suppliers -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('supplierQuickSearch');
+            const searchBtn = document.getElementById('quickSearchBtn');
+
+            function performSearch() {
+                const searchTerm = searchInput.value.trim();
+                if (searchTerm) {
+                    window.location.href = `/Supplier?search=${encodeURIComponent(searchTerm)}`;
+                }
+            }
+
+            searchBtn.addEventListener('click', performSearch);
+
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performSearch();
+                }
+            });
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

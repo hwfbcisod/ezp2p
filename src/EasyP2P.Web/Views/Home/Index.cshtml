@@ -55,9 +55,10 @@
         </div>
     }
 
+
     <!-- Key Metrics Cards -->
     <div class="row mb-4">
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <a href="/PurchaseOrderRequest" class="text-decoration-none">
                 <div class="card metric-card h-100 border-0 shadow-sm clickable-metric">
                     <div class="card-body text-center">
@@ -70,7 +71,7 @@
                 </div>
             </a>
         </div>
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <a href="/PurchaseOrder" class="text-decoration-none">
                 <div class="card metric-card h-100 border-0 shadow-sm clickable-metric">
                     <div class="card-body text-center">
@@ -83,7 +84,20 @@
                 </div>
             </a>
         </div>
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
+            <a href="/Supplier" class="text-decoration-none">
+                <div class="card metric-card h-100 border-0 shadow-sm clickable-metric">
+                    <div class="card-body text-center">
+                        <div class="metric-icon bg-info text-white rounded-circle mx-auto mb-3">
+                            <i class="bi bi-building fs-1"></i>
+                        </div>
+                        <h3 class="metric-value text-info">@Model.Metrics.ActiveSuppliers</h3>
+                        <p class="metric-label text-muted mb-0">Active Suppliers</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-2 mb-3">
             <a href="/PurchaseOrderRequest?status=PendingApproval" class="text-decoration-none">
                 <div class="card metric-card h-100 border-0 shadow-sm clickable-metric">
                     <div class="card-body text-center">
@@ -96,7 +110,7 @@
                 </div>
             </a>
         </div>
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <a href="/PurchaseOrderRequest?priority=Urgent" class="text-decoration-none">
                 <div class="card metric-card h-100 border-0 shadow-sm clickable-metric">
                     <div class="card-body text-center">
@@ -109,9 +123,20 @@
                 </div>
             </a>
         </div>
+        <div class="col-md-2 mb-3">
+            <a href="/Supplier/TopRated" class="text-decoration-none">
+                <div class="card metric-card h-100 border-0 shadow-sm clickable-metric">
+                    <div class="card-body text-center">
+                        <div class="metric-icon bg-warning text-white rounded-circle mx-auto mb-3">
+                            <i class="bi bi-star fs-1"></i>
+                        </div>
+                        <h3 class="metric-value text-warning">@Model.Metrics.TopRatedSuppliers</h3>
+                        <p class="metric-label text-muted mb-0">Top Rated</p>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
-
-    <!-- Secondary Metrics -->
     <div class="row mb-4">
         <div class="col-md-3 mb-3">
             <div class="card stat-card border-0 shadow-sm">
@@ -148,11 +173,11 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="stat-icon bg-light rounded me-3">
-                            <i class="bi bi-percent text-info"></i>
+                            <i class="bi bi-building text-info"></i>
                         </div>
                         <div>
-                            <h6 class="stat-value mb-1">@Model.Metrics.ApprovalRate%</h6>
-                            <small class="text-muted">Approval Rate</small>
+                            <h6 class="stat-value mb-1">@Model.Metrics.TotalSuppliers</h6>
+                            <small class="text-muted">Total Suppliers</small>
                         </div>
                     </div>
                 </div>
@@ -174,6 +199,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- Three Sections Row -->
     <div class="row mb-4">
@@ -382,6 +408,92 @@
         </div>
     </div>
 
+    <!-- NEW: Supplier Overview Section -->
+    <div class="col-lg-4 mb-4">
+        @if (Model.SupplierSummaries.Any())
+        {
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">
+                            <i class="bi bi-building me-2 text-success"></i>
+                            Top Suppliers
+                        </h6>
+                        <a asp-controller="Supplier" asp-action="Index" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> View All
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @foreach (var supplier in Model.SupplierSummaries.Take(4))
+                    {
+                        <div class="supplier-item mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <a asp-controller="Supplier" asp-action="Details" asp-route-id="@supplier.SupplierId"
+                                           class="text-decoration-none">
+                                            @supplier.SupplierName
+                                        </a>
+                                    </h6>
+                                    @if (supplier.Rating.HasValue)
+                                    {
+                                        <small class="text-warning">@supplier.RatingStars</small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">Not rated</small>
+                                    }
+                                </div>
+                                <span class="badge bg-success">@supplier.TotalValue.ToString("C0")</span>
+                            </div>
+                            <div class="row text-center small">
+                                <div class="col-4">
+                                    <div class="text-muted">Orders</div>
+                                    <strong>@supplier.OrderCount</strong>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-muted">Terms</div>
+                                    <strong class="small">@(supplier.PaymentTerms.Length > 8 ? supplier.PaymentTerms.Substring(0, 8) + "..." : supplier.PaymentTerms)</strong>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-muted">Last Order</div>
+                                    <strong class="small">@(supplier.LastOrderDate?.ToString("MM/dd") ?? "None")</strong>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    <div class="text-center mt-3">
+                        <a asp-controller="Supplier" asp-action="TopRated" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-star"></i> View Top Rated
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-building me-2 text-success"></i>
+                        Supplier Overview
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-building fs-1 mb-2 d-block"></i>
+                        <p class="mb-2">No supplier data</p>
+                        <a asp-controller="Supplier" asp-action="Create" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle"></i> Add First Supplier
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+
     <!-- Charts Row -->
     <div class="row mb-4">
         <!-- Request Trends Chart -->
@@ -578,6 +690,52 @@
 
     .card-header {
         border-radius: 0.75rem 0.75rem 0 0 !important;
+    }
+
+    .supplier-item {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef !important;
+        transition: all 0.2s ease;
+    }
+
+        .supplier-item:hover {
+            background: #e9ecef;
+            border-color: #0d6efd !important;
+            transform: translateY(-1px);
+        }
+
+        .supplier-item h6 a {
+            color: #495057;
+            font-weight: 600;
+        }
+
+            .supplier-item h6 a:hover {
+                color: #0d6efd;
+            }
+
+    /* Enhanced metric card styles */
+    .metric-card:hover .metric-icon {
+        transform: scale(1.05);
+        transition: transform 0.2s ease;
+    }
+
+    /* Better responsive design for metrics */
+    @@media (max-width: 768px) {
+        .metric-value
+
+    {
+        font-size: 2rem;
+    }
+
+    .metric-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+        .metric-icon i {
+            font-size: 1.5rem !important;
+        }
+
     }
 </style>
 

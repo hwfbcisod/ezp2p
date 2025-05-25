@@ -13,6 +13,7 @@ public class DashboardViewModel
     public List<StatusBreakdown> OrderStatusBreakdown { get; set; } = new();
     public List<TrendDataPoint> RequestTrends { get; set; } = new();
     public List<DepartmentSummary> DepartmentSummaries { get; set; } = new();
+    public List<SupplierSummary> SupplierSummaries { get; set; } = new();
 }
 
 public class DashboardMetrics
@@ -25,6 +26,9 @@ public class DashboardMetrics
     public decimal TotalValueThisMonth { get; set; }
     public double ApprovalRate { get; set; }
     public double AverageProcessingDays { get; set; }
+    public int TotalSuppliers { get; set; }
+    public int ActiveSuppliers { get; set; }
+    public int TopRatedSuppliers { get; set; }
 }
 
 public class DashboardAlert
@@ -97,4 +101,30 @@ public class DepartmentSummary
     public int ActiveOrders { get; set; }
     public decimal TotalValue { get; set; }
     public string TopItem { get; set; } = "";
+}
+
+public class SupplierSummary
+{
+    public int SupplierId { get; set; }
+    public string SupplierName { get; set; } = "";
+    public string Status { get; set; } = "";
+    public int? Rating { get; set; }
+    public int OrderCount { get; set; }
+    public decimal TotalValue { get; set; }
+    public DateTime? LastOrderDate { get; set; }
+    public string PaymentTerms { get; set; } = "";
+    public string RatingStars
+    {
+        get
+        {
+            if (!Rating.HasValue) return "Not Rated";
+
+            var stars = "";
+            for (int i = 1; i <= 5; i++)
+            {
+                stars += i <= Rating.Value ? "★" : "☆";
+            }
+            return stars;
+        }
+    }
 }

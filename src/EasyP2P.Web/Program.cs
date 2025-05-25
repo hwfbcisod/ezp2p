@@ -15,8 +15,13 @@ public class Program
         builder.Services.AddControllersWithViews();
         builder.Services.AddScoped<IPurchaseOrderRequestRepository, PostgresPurchaseOrderRequestRepository>();
         builder.Services.AddScoped<IPurchaseOrderRepository, PostgresPurchaseOrderRepository>();
+
         builder.Services.AddScoped<IPurchaseOrderRequestService, PurchaseOrderRequestService>();
         builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
+
+        builder.Services.AddScoped<ISupplierRepository, PostgresSupplierRepository>();
+        builder.Services.AddScoped<ISupplierService, SupplierService>();
+
         builder.Services.AddScoped<IDashboardService, DashboardService>();
         builder.Services.AddMemoryCache();
         builder.Services.AddLogging(builder => {

@@ -13,15 +13,18 @@ public class DashboardService : IDashboardService
 {
     private readonly IPurchaseOrderRequestRepository _porRepository;
     private readonly IPurchaseOrderRepository _poRepository;
+    private readonly ISupplierRepository _supplierRepository; // NEW: Supplier repository
     private readonly ILogger<DashboardService> _logger;
 
     public DashboardService(
         IPurchaseOrderRequestRepository porRepository,
         IPurchaseOrderRepository poRepository,
+        ISupplierRepository supplierRepository, // NEW: Inject supplier repository
         ILogger<DashboardService> logger)
     {
         _porRepository = porRepository;
         _poRepository = poRepository;
+        _supplierRepository = supplierRepository; // NEW: Store supplier repository
         _logger = logger;
     }
 
@@ -34,15 +37,17 @@ public class DashboardService : IDashboardService
             // Get all data
             var allRequests = await _porRepository.GetAllAsync();
             var allOrders = await _poRepository.GetAllAsync();
+            var allSuppliers = await _supplierRepository.GetAllAsync(); // NEW: Get suppliers
 
             var requestViewModels = allRequests.ToViewModels().ToList();
             var orderViewModels = allOrders.ToViewModels().ToList();
+            var supplierViewModels = allSuppliers.ToViewModels().ToList(); // NEW: Convert suppliers
 
-            // Calculate metrics
-            dashboard.Metrics = CalculateMetrics(requestViewModels, orderViewModels);
+            // Calculate metrics (now includes supplier metrics)
+            dashboard.Metrics = CalculateMetrics(requestViewModels, orderViewModels, supplierViewModels); // NEW: Pass suppliers
 
-            // Generate alerts
-            dashboard.Alerts = GenerateAlerts(requestViewModels, orderViewModels);
+            // Generate alerts (now includes supplier alerts)
+            dashboard.Alerts = GenerateAlerts(requestViewModels, orderViewModels, supplierViewModels); // NEW: Pass suppliers
 
             // Get recent activity
             dashboard.RecentActivity = GetRecentActivity(requestViewModels, orderViewModels);
@@ -63,6 +68,9 @@ public class DashboardService : IDashboardService
             // Get department summaries
             dashboard.DepartmentSummaries = GetDepartmentSummaries(requestViewModels, orderViewModels);
 
+            // NEW: Get supplier summaries
+            dashboard.SupplierSummaries = GetSupplierSummaries(supplierViewModels, orderViewModels);
+
             return dashboard;
         }
         catch (Exception ex)
@@ -72,7 +80,11 @@ public class DashboardService : IDashboardService
         }
     }
 
-    private DashboardMetrics CalculateMetrics(List<PurchaseOrderRequestViewModel> requests, List<PurchaseOrderViewModel> orders)
+    // NEW: Updated to include supplier metrics
+    private DashboardMetrics CalculateMetrics(
+        List<PurchaseOrderRequestViewModel> requests,
+        List<PurchaseOrderViewModel> orders,
+        List<SupplierViewModel> suppliers) // NEW: Added suppliers parameter
     {
         var now = DateTime.Now;
         var startOfMonth = new DateTime(now.Year, now.Month, 1);
@@ -106,14 +118,23 @@ public class DashboardService : IDashboardService
             CompletedThisMonth = completedThisMonth,
             TotalValueThisMonth = totalValueThisMonth,
             ApprovalRate = Math.Round(approvalRate, 1),
-            AverageProcessingDays = Math.Round(avgProcessingDays, 1)
+            AverageProcessingDays = Math.Round(avgProcessingDays, 1),
+            // NEW: Supplier metrics
+            TotalSuppliers = suppliers.Count(),
+            ActiveSuppliers = suppliers.Count(s => s.Status == "Active"),
+            TopRatedSuppliers = suppliers.Count(s => s.Rating >= 4)
         };
     }
 
-    private List<DashboardAlert> GenerateAlerts(List<PurchaseOrderRequestViewModel> requests, List<PurchaseOrderViewModel> orders)
+    // NEW: Updated to include supplier alerts
+    private List<DashboardAlert> GenerateAlerts(
+        List<PurchaseOrderRequestViewModel> requests,
+        List<PurchaseOrderViewModel> orders,
+        List<SupplierViewModel> suppliers) // NEW: Added suppliers parameter
     {
         var alerts = new List<DashboardAlert>();
 
+        // Existing alerts...
         // Overdue deliveries
         var overdueDeliveries = requests.Count(r =>
             r.ExpectedDeliveryDate.HasValue &&
@@ -150,9 +171,75 @@ public class DashboardService : IDashboardService
             });
         }
 
+        // NEW: Supplier alerts
+        var pendingSuppliers = suppliers.Count(s => s.Status == "Pending");
+        if (pendingSuppliers > 0)
+        {
+            alerts.Add(new DashboardAlert
+            {
+                Type = "info",
+                Title = "Pending Suppliers",
+                Message = $"{pendingSuppliers} supplier{(pendingSuppliers != 1 ? "s" : "")} awaiting approval",
+                ActionUrl = "/Supplier?status=Pending",
+                ActionText = "Review Suppliers",
+                CreatedAt = DateTime.Now
+            });
+        }
+
+        var suspendedSuppliers = suppliers.Count(s => s.Status == "Suspended");
+        if (suspendedSuppliers > 0)
+        {
+            alerts.Add(new DashboardAlert
+            {
+                Type = "warning",
+                Title = "Suspended Suppliers",
+                Message = $"{suspendedSuppliers} supplier{(suspendedSuppliers != 1 ? "s" : "")} currently suspended",
+                ActionUrl = "/Supplier?status=Suspended",
+                ActionText = "Review",
+                CreatedAt = DateTime.Now
+            });
+        }
+
+        var lowRatedSuppliers = suppliers.Count(s => s.Rating.HasValue && s.Rating <= 2 && s.Status == "Active");
+        if (lowRatedSuppliers > 0)
+        {
+            alerts.Add(new DashboardAlert
+            {
+                Type = "warning",
+                Title = "Low Rated Suppliers",
+                Message = $"{lowRatedSuppliers} active supplier{(lowRatedSuppliers != 1 ? "s" : "")} with poor ratings",
+                ActionUrl = "/Supplier?rating=2",
+                ActionText = "Review",
+                CreatedAt = DateTime.Now
+            });
+        }
+
         return alerts.Take(5).ToList(); // Limit to 5 alerts
     }
 
+    // NEW: Get supplier summaries for dashboard
+    private List<SupplierSummary> GetSupplierSummaries(List<SupplierViewModel> suppliers, List<PurchaseOrderViewModel> orders)
+    {
+        return suppliers.Where(s => s.Status == "Active")
+                       .Take(5)
+                       .Select(s => new SupplierSummary
+                       {
+                           SupplierId = s.Id,
+                           SupplierName = s.Name,
+                           Status = s.Status,
+                           Rating = s.Rating,
+                           OrderCount = orders.Count(o => o.Supplier == s.Name),
+                           TotalValue = orders.Where(o => o.Supplier == s.Name).Sum(o => o.TotalPrice),
+                           LastOrderDate = orders.Where(o => o.Supplier == s.Name)
+                                                .OrderByDescending(o => o.OrderDate)
+                                                .FirstOrDefault()?.OrderDate,
+                           PaymentTerms = s.PaymentTerms
+                       })
+                       .OrderByDescending(s => s.TotalValue)
+                       .ToList();
+    }
+
+    // All other existing methods remain the same...
     private List<RecentActivityItem> GetRecentActivity(List<PurchaseOrderRequestViewModel> requests, List<PurchaseOrderViewModel> orders)
     {
         var activities = new List<RecentActivityItem>();
