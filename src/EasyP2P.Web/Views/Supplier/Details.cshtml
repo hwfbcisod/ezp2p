@@ -92,10 +92,6 @@
                                     <td>@(string.IsNullOrEmpty(Model.TaxId) ? "Not provided" : Model.TaxId)</td>
                                 </tr>
                                 <tr>
-                                    <td class="fw-bold">Payment Terms:</td>
-                                    <td>@(string.IsNullOrEmpty(Model.PaymentTerms) ? "Not specified" : Model.PaymentTerms)</td>
-                                </tr>
-                                <tr>
                                     <td class="fw-bold">Rating:</td>
                                     <td>
                                         @if (Model.Rating.HasValue)

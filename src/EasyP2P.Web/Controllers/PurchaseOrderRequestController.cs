@@ -1,40 +1,61 @@
-﻿using EasyP2P.Web.Models;
+﻿using EasyP2P.Web.Attributes;
+using EasyP2P.Web.Enums;
+using EasyP2P.Web.Models;
 using EasyP2P.Web.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EasyP2P.Web.Controllers;
 
+[Authorize]
 public class PurchaseOrderRequestController : Controller
 {
     private readonly ILogger<PurchaseOrderRequestController> _logger;
     private readonly IPurchaseOrderRequestService _purchaseOrderRequestService;
+    private readonly IUserContextService _userContextService;
 
     public PurchaseOrderRequestController(
         ILogger<PurchaseOrderRequestController> logger,
-        IPurchaseOrderRequestService purchaseOrderRequestService)
+        IPurchaseOrderRequestService purchaseOrderRequestService,
+        IUserContextService userContextService)
     {
         _logger = logger;
         _purchaseOrderRequestService = purchaseOrderRequestService;
+        _userContextService = userContextService;
     }
 
     public async Task<IActionResult> Index()
     {
-        var pendingRequests = await _purchaseOrderRequestService.GetAllRequestsAsync();
+        var filteredRequests = await _purchaseOrderRequestService.GetFilteredRequestsAsync();
 
-        return View(pendingRequests);
+        // Add user context to ViewBag for conditional UI rendering
+        ViewBag.UserRole = _userContextService.GetCurrentUserRole();
+        ViewBag.CanViewAllDepartments = _userContextService.CanViewAllDepartments();
+
+        return View(filteredRequests);
     }
 
     public async Task<IActionResult> Details(int id)
     {
-        var request = await _purchaseOrderRequestService.GetRequestByIdAsync(id);
+        var request = await _purchaseOrderRequestService.GetRequestByIdAsync(id, enforcePermissions: true);
         if (request == null)
         {
-            return NotFound();
+            TempData["ErrorMessage"] = "Request not found or you don't have permission to view it.";
+            return RedirectToAction(nameof(Index));
         }
+
+        // Set permission flags for the view
+        ViewBag.CanApprove = request.CanApprove && _userContextService.HasPermission("ApprovePOR");
+        ViewBag.CanReject = request.CanReject && _userContextService.HasPermission("RejectPOR");
+        ViewBag.CanCancel = request.CanCancel && (
+            _userContextService.HasPermission("CancelOwnPOR") && request.RequestedBy == _userContextService.GetCurrentUser() ||
+            _userContextService.GetCurrentUserRole() == UserRole.Administrator
+        );
 
         return View(request);
     }
 
+    [RequiresPermission("CreatePOR")]
     public IActionResult Create()
     {
         ViewBag.Priorities = new List<string> { "Low", "Medium", "High", "Urgent" };
@@ -44,6 +65,7 @@ public class PurchaseOrderRequestController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequiresPermission("CreatePOR")]
     public async Task<IActionResult> Create(PurchaseOrderRequestInputModel model)
     {
         if (ModelState.IsValid)
@@ -69,7 +91,7 @@ public class PurchaseOrderRequestController : Controller
             {
                 try
                 {
-                    string currentUser = "CurrentUser"; // Replace with actual user
+                    string currentUser = _userContextService.GetCurrentUser();
                     var id = await _purchaseOrderRequestService.CreateRequestAsync(model, currentUser);
 
                     _logger.LogInformation("New POR created with ID {Id}: Item={ItemName}, Quantity={Quantity}",
@@ -93,28 +115,39 @@ public class PurchaseOrderRequestController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequiresPermission("ApprovePOR")]
     public async Task<IActionResult> Approve(int id)
     {
-        try
+        // Double-check permission at entity level
+        var request = await _purchaseOrderRequestService.GetRequestByIdAsync(id, enforcePermissions: true);
+        if (request == null || !request.CanApprove)
         {
-            string currentUser = "ApproverUser"; // Replace with actual user
+            TempData["ErrorMessage"] = "Cannot approve this request.";
+            return RedirectToAction(nameof(Index));
+        }
 
-            var success = await _purchaseOrderRequestService.ApproveRequestAsync(id, currentUser);
-
-            if (success)
+        // Check department-level permissions for approvers
+        if (_userContextService.GetCurrentUserRole() == UserRole.Approver)
+        {
+            var currentDepartment = _userContextService.GetCurrentUserDepartment();
+            if (request.Department != currentDepartment)
             {
-                TempData["SuccessMessage"] = $"Purchase Order Request #{id} has been approved successfully.";
-                TempData["CreatePOLink"] = id; // For direct PO creation link
-            }
-            else
-            {
-                TempData["ErrorMessage"] = "Failed to approve the request. It may not be in the correct state for approval.";
+                TempData["ErrorMessage"] = "You can only approve requests from your department.";
+                return RedirectToAction(nameof(Index));
             }
         }
-        catch (Exception ex)
+
+        // Proceed with approval
+        var success = await _purchaseOrderRequestService.ApproveRequestAsync(id, _userContextService.GetCurrentUser());
+
+        if (success)
         {
-            _logger.LogError(ex, "Error approving purchase order request {Id}", id);
-            TempData["ErrorMessage"] = "An error occurred while approving the request.";
+            TempData["SuccessMessage"] = $"Purchase Order Request #{id} has been approved successfully.";
+            TempData["CreatePOLink"] = id;
+        }
+        else
+        {
+            TempData["ErrorMessage"] = "Failed to approve the request.";
         }
 
         return RedirectToAction(nameof(Details), new { id });
@@ -122,6 +155,7 @@ public class PurchaseOrderRequestController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequiresPermission("RejectPOR")]
     public async Task<IActionResult> Reject(int id)
     {
         try
@@ -151,6 +185,7 @@ public class PurchaseOrderRequestController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [AllowAnonymous]
     public async Task<IActionResult> Cancel(int id)
     {
         try

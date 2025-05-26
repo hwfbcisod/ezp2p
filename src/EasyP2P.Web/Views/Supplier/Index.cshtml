@@ -193,7 +193,6 @@
                                         <i class="bi bi-arrow-up-down"></i>
                                     </button>
                                 </th>
-                                <th>Payment Terms</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -206,8 +205,7 @@
                                     data-state="@supplier.State.ToLower()"
                                     data-country="@supplier.Country.ToLower()"
                                     data-status="@supplier.Status.ToLower()"
-                                    data-rating="@(supplier.Rating ?? 0)"
-                                    data-terms="@supplier.PaymentTerms.ToLower()">
+                                    data-rating="@(supplier.Rating ?? 0)">
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div>
@@ -263,7 +261,6 @@
                                             <span class="text-muted">Not Rated</span>
                                         }
                                     </td>
-                                    <td>@supplier.PaymentTerms</td>
                                     <td>
                                         <div class="btn-group" role="group">
                                             <a asp-action="Details" asp-route-id="@supplier.Id" class="btn btn-info btn-sm">

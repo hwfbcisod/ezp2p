@@ -30,13 +30,16 @@ public interface ISupplierService
 public class SupplierService : ISupplierService
 {
     private readonly ISupplierRepository _repository;
+    private readonly IUserContextService _userContextService;
     private readonly ILogger<SupplierService> _logger;
 
     public SupplierService(
         ISupplierRepository repository,
+        IUserContextService userContextService,
         ILogger<SupplierService> logger)
     {
         _repository = repository;
+        _userContextService = userContextService;
         _logger = logger;
     }
 
@@ -56,16 +59,10 @@ public class SupplierService : ISupplierService
 
     public async Task<IEnumerable<SupplierViewModel>> GetAllSuppliersAsync()
     {
-        try
-        {
-            var dbModels = await _repository.GetAllAsync();
-            return dbModels.ToViewModels();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving all suppliers");
-            return Enumerable.Empty<SupplierViewModel>();
-        }
+        var allSuppliers = await _repository.GetAllAsync();
+        var viewModels = allSuppliers.ToViewModels();
+
+        return FilterSuppliersByUserRole(viewModels);
     }
 
     public async Task<IEnumerable<SupplierViewModel>> GetSuppliersByStatusAsync(SupplierStatus status)
@@ -371,5 +368,19 @@ public class SupplierService : ISupplierService
     {
         var validStatuses = new[] { "Active", "Inactive", "Pending", "Suspended" };
         return validStatuses.Contains(status);
+    }
+
+    private IEnumerable<SupplierViewModel> FilterSuppliersByUserRole(IEnumerable<SupplierViewModel> suppliers)
+    {
+        var role = _userContextService.GetCurrentUserRole();
+
+        return role switch
+        {
+            UserRole.Administrator => suppliers, // Admin sees all suppliers
+            UserRole.Purchaser => suppliers, // Purchaser sees all suppliers
+            UserRole.Approver => suppliers.Where(s => s.Status == "Active"), // Only active suppliers
+            UserRole.Requestor => suppliers.Where(s => s.Status == "Active"), // Only active suppliers
+            _ => Enumerable.Empty<SupplierViewModel>()
+        };
     }
 }

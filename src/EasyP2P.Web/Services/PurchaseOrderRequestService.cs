@@ -21,18 +21,24 @@ public interface IPurchaseOrderRequestService
     Task<IEnumerable<PurchaseOrderRequestViewModel>> GetAllRequestsAsync();
     Task<IEnumerable<PurchaseOrderRequestViewModel>> GetRequestsByStatusAsync(PurchaseOrderRequestState status);
     Task<int> CreateRequestAsync(PurchaseOrderRequestInputModel model, string requestedBy);
+    Task<IEnumerable<PurchaseOrderRequestViewModel>> GetFilteredRequestsAsync();
+    Task<IEnumerable<PurchaseOrderRequestViewModel>> GetRequestsForApprovalAsync();
+    Task<PurchaseOrderRequestViewModel?> GetRequestByIdAsync(int id, bool enforcePermissions = true);
 }
 
 public class PurchaseOrderRequestService : IPurchaseOrderRequestService
 {
     private readonly IPurchaseOrderRequestRepository _repository;
+    private readonly IUserContextService _userContextService;
     private readonly ILogger<PurchaseOrderRequestService> _logger;
 
     public PurchaseOrderRequestService(
         IPurchaseOrderRequestRepository repository,
+        IUserContextService userContextService,
         ILogger<PurchaseOrderRequestService> logger)
     {
         _repository = repository;
+        _userContextService = userContextService;
         _logger = logger;
     }
 
@@ -292,6 +298,59 @@ public class PurchaseOrderRequestService : IPurchaseOrderRequestService
             _logger.LogError(ex, "Error retrieving requests with status {Status}", status);
             return Enumerable.Empty<PurchaseOrderRequestViewModel>();
         }
+    }
+
+    public async Task<IEnumerable<PurchaseOrderRequestViewModel>> GetFilteredRequestsAsync()
+    {
+        var allRequests = await _repository.GetAllAsync();
+        var viewModels = allRequests.ToViewModels();
+
+        return FilterRequestsByUserRole(viewModels);
+    }
+
+    public async Task<IEnumerable<PurchaseOrderRequestViewModel>> GetRequestsForApprovalAsync()
+    {
+        var pendingRequests = await _repository.GetByStatusAsync(PurchaseOrderRequestState.PendingApproval);
+        var viewModels = pendingRequests.ToViewModels();
+
+        // Only show requests that the current user can approve
+        return FilterRequestsByUserRole(viewModels)
+            .Where(r => r.Status == "PendingApproval");
+    }
+
+    public async Task<PurchaseOrderRequestViewModel?> GetRequestByIdAsync(int id, bool enforcePermissions = true)
+    {
+        var dbModel = await _repository.GetByIdAsync(id);
+        if (dbModel == null) return null;
+
+        var viewModel = dbModel.ToViewModel();
+
+        // Apply permission filtering if enforced
+        if (enforcePermissions && !_userContextService.CanViewEntity("POR", viewModel.RequestedBy, viewModel.Department))
+        {
+            _logger.LogWarning("User {User} attempted to access POR {Id} without permission",
+                _userContextService.GetCurrentUser(), id);
+            return null;
+        }
+
+        return viewModel;
+    }
+
+    private IEnumerable<PurchaseOrderRequestViewModel> FilterRequestsByUserRole(IEnumerable<PurchaseOrderRequestViewModel> requests)
+    {
+        var role = _userContextService.GetCurrentUserRole();
+        var currentUser = _userContextService.GetCurrentUser();
+        var accessibleDepartments = _userContextService.GetAccessibleDepartments();
+
+        return role switch
+        {
+            UserRole.Administrator => requests, // Admin sees everything
+            UserRole.Purchaser => requests, // Purchaser sees everything
+            UserRole.Approver => requests.Where(r =>
+                string.IsNullOrEmpty(r.Department) || accessibleDepartments.Contains(r.Department)),
+            UserRole.Requestor => requests.Where(r => r.RequestedBy == currentUser),
+            _ => Enumerable.Empty<PurchaseOrderRequestViewModel>()
+        };
     }
 }
 

@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@using System.Security.Claims
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -22,77 +23,93 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-lg-inline-flex justify-content-between">
-                    <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Home" ? "active" : "")"
-                               asp-area="" asp-controller="Home" asp-action="Index">
-                                <i class="bi bi-speedometer2 me-1"></i>
-                                Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "PurchaseOrderRequest" ? "active" : "")"
-                               asp-controller="PurchaseOrderRequest" asp-action="Index">
-                                <i class="bi bi-file-plus me-1"></i>
-                                Purchase Requests
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "PurchaseOrder" ? "active" : "")"
-                               asp-controller="PurchaseOrder" asp-action="Index">
-                                <i class="bi bi-file-text me-1"></i>
-                                Purchase Orders
-                            </a>
-                        </li>
-                        <!-- NEW: Supplier navigation item -->
-                        <li class="nav-item">
-                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Supplier" ? "active" : "")"
-                               asp-controller="Supplier" asp-action="Index">
-                                <i class="bi bi-building me-1"></i>
-                                Suppliers
-                            </a>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-plus-circle me-1"></i>
-                                Quick Create
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li>
-                                    <a class="dropdown-item" asp-controller="PurchaseOrderRequest" asp-action="Create">
-                                        <i class="bi bi-file-plus me-2"></i>New Purchase Request
-                                    </a>
-                                </li>
-                                <!-- NEW: Quick create supplier -->
-                                <li>
-                                    <a class="dropdown-item" asp-controller="Supplier" asp-action="Create">
-                                        <i class="bi bi-building me-2"></i>New Supplier
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="/PurchaseOrderRequest?filter=approved">
-                                        <i class="bi bi-check-circle me-2"></i>Create PO from Approved Requests
-                                    </a>
-                                </li>
-                                <!-- NEW: Quick link to top rated suppliers -->
-                                <li>
-                                    <a class="dropdown-item" asp-controller="Supplier" asp-action="TopRated">
-                                        <i class="bi bi-star me-2"></i>View Top Rated Suppliers
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Home" ? "active" : "")"
+                                   asp-area="" asp-controller="Home" asp-action="Index">
+                                    <i class="bi bi-speedometer2 me-1"></i>
+                                    Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "PurchaseOrderRequest" ? "active" : "")"
+                                   asp-controller="PurchaseOrderRequest" asp-action="Index">
+                                    <i class="bi bi-file-plus me-1"></i>
+                                    Purchase Requests
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "PurchaseOrder" ? "active" : "")"
+                                   asp-controller="PurchaseOrder" asp-action="Index">
+                                    <i class="bi bi-file-text me-1"></i>
+                                    Purchase Orders
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Supplier" ? "active" : "")"
+                                   asp-controller="Supplier" asp-action="Index">
+                                    <i class="bi bi-building me-1"></i>
+                                    Suppliers
+                                </a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-plus-circle me-1"></i>
+                                    Quick Create
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="PurchaseOrderRequest" asp-action="Create">
+                                            <i class="bi bi-file-plus me-2"></i>New Purchase Request
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="Supplier" asp-action="Create">
+                                            <i class="bi bi-building me-2"></i>New Supplier
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
 
-                    <!-- NEW: Quick search for suppliers -->
-                    <div class="d-flex">
-                        <input class="form-control me-2" type="search" placeholder="Search suppliers..."
-                               id="supplierQuickSearch" style="width: 200px;">
-                        <button class="btn btn-outline-light" type="button" id="quickSearchBtn">
-                            <i class="bi bi-search"></i>
-                        </button>
-                    </div>
+                        <!-- User menu for authenticated users -->
+                        <div class="navbar-nav">
+                            <div class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-person-circle"></i>
+                                    @User.Identity.Name
+                                    <small class="badge bg-light text-dark ms-1">@User.FindFirstValue("UserRole")</small>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><span class="dropdown-item-text"><strong>Role:</strong> @User.FindFirstValue("UserRole")</span></li>
+                                    <li><span class="dropdown-item-text"><strong>Department:</strong> @User.FindFirstValue("Department")</span></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form asp-controller="Account" asp-action="Logout" method="post" style="display: inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="dropdown-item">
+                                                <i class="bi bi-box-arrow-right"></i> Logout
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Login/Register for anonymous users -->
+                        <div class="navbar-nav ms-auto">
+                            <a class="nav-link text-white" asp-controller="Account" asp-action="Login">
+                                <i class="bi bi-box-arrow-in-right"></i> Login
+                            </a>
+                            <a class="nav-link text-white" asp-controller="Account" asp-action="Register">
+                                <i class="bi bi-person-plus"></i> Register
+                            </a>
+                        </div>
+                    }
                 </div>
             </div>
         </nav>

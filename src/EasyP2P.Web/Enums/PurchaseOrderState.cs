@@ -41,57 +41,50 @@ public enum PurchaseOrderState
     Sent = 5,
 
     /// <summary>
-    /// The vendor has confirmed receipt and acceptance of the purchase order,
-    /// including agreement to the specified terms, quantities, pricing structure,
-    /// and delivery schedules.
-    /// </summary>
-    Acknowledged = 6,
-
-    /// <summary>
     /// A subset of the ordered items has been delivered and formally received
     /// by the organization, while the complete order remains unfulfilled.
     /// Accommodates multi-line orders and phased delivery schedules.
     /// </summary>
-    PartiallyReceived = 7,
+    PartiallyReceived = 6,
 
     /// <summary>
     /// All ordered items have been delivered in accordance with the purchase
     /// order specifications. Delivery documentation is formally attached 
     /// to the procurement record.
     /// </summary>
-    FullyReceived = 8,
+    FullyReceived = 7,
 
     /// <summary>
     /// The vendor has submitted the corresponding invoice for payment processing,
     /// with the invoice documentation integrated into the procurement process workflow.
     /// </summary>
-    Invoiced = 9,
+    Invoiced = 8,
 
     /// <summary>
     /// A systematic comparison is conducted between the original purchase order,
     /// the delivery note, and the vendor invoice. This control mechanism verifies
     /// alignment between ordered quantities, delivered quantities, and invoiced amounts.
     /// </summary>
-    ThreeWayMatch = 10,
+    ThreeWayMatch = 9,
 
     /// <summary>
     /// Financial settlement has been executed in accordance with the approved
     /// invoice and organizational payment terms. Funds have been transferred
     /// to the supplier through established payment mechanisms.
     /// </summary>
-    PaymentMade = 11,
+    PaymentMade = 10,
 
     /// <summary>
     /// The supplier has confirmed receipt of payment, and all procedural
     /// requirements have been satisfied. This terminal state represents
     /// successful completion of the entire procurement cycle.
     /// </summary>
-    ClosedCompleted = 12,
+    Completed = 11,
 
     /// <summary>
     /// The purchase order has been terminated at any point within the process
     /// lifecycle. May result from business requirement changes, supplier
     /// performance issues, delivery complications, or strategic organizational decisions.
     /// </summary>
-    Cancelled = 13
+    Cancelled = 12
 }

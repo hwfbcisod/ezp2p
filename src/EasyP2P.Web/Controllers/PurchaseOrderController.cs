@@ -1,5 +1,5 @@
-﻿// Updated Controllers/PurchaseOrderController.cs - Key changes highlighted with // NEW comments
-
+﻿
+using EasyP2P.Web.Attributes;
 using EasyP2P.Web.Models;
 using EasyP2P.Web.Services;
 using iText.Kernel.Colors;
@@ -7,10 +7,12 @@ using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
 using iText.Layout.Properties;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EasyP2P.Web.Controllers;
 
+[Authorize]
 public class PurchaseOrderController : Controller
 {
     private readonly IPurchaseOrderService _purchaseOrderService;
@@ -30,14 +32,14 @@ public class PurchaseOrderController : Controller
         _logger = logger;
     }
 
-    // GET: PurchaseOrder/Index
+    [RequiresPermission("ViewAllPO")]
     public async Task<IActionResult> Index()
     {
         var orders = await _purchaseOrderService.GetAllOrdersAsync();
         return View(orders);
     }
 
-    // GET: PurchaseOrder/Details/5
+    [RequiresPermission("CreatePO")]
     public async Task<IActionResult> Details(int id)
     {
         var order = await _purchaseOrderService.GetOrderByIdAsync(id);

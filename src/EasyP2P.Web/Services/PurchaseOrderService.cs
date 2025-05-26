@@ -25,42 +25,43 @@ public interface IPurchaseOrderService
 public class PurchaseOrderService : IPurchaseOrderService
 {
     private readonly IPurchaseOrderRepository _repository;
+    private readonly IUserContextService _userContextService;
     private readonly ILogger<PurchaseOrderService> _logger;
 
     public PurchaseOrderService(
         IPurchaseOrderRepository repository,
+        IUserContextService userContextService,
         ILogger<PurchaseOrderService> logger)
     {
         _repository = repository;
+        _userContextService = userContextService;
         _logger = logger;
     }
 
     public async Task<PurchaseOrderViewModel?> GetOrderByIdAsync(int id)
     {
-        try
+        var dbModel = await _repository.GetByIdAsync(id);
+        if (dbModel == null) return null;
+
+        var viewModel = dbModel.ToViewModel();
+
+        // Check if user can view this order
+        if (!_userContextService.CanViewEntity("PO", viewModel.CreatedBy))
         {
-            var dbModel = await _repository.GetByIdAsync(id);
-            return dbModel?.ToViewModel();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving order {Id}", id);
+            _logger.LogWarning("User {User} attempted to access PO {Id} without permission",
+                _userContextService.GetCurrentUser(), id);
             return null;
         }
+
+        return viewModel;
     }
 
     public async Task<IEnumerable<PurchaseOrderViewModel>> GetAllOrdersAsync()
     {
-        try
-        {
-            var dbModels = await _repository.GetAllAsync();
-            return dbModels.ToViewModels();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving all orders");
-            return Enumerable.Empty<PurchaseOrderViewModel>();
-        }
+        var allOrders = await _repository.GetAllAsync();
+        var viewModels = allOrders.ToViewModels();
+
+        return FilterOrdersByUserRole(viewModels);
     }
 
     public async Task<IEnumerable<PurchaseOrderViewModel>> GetOrdersByStatusAsync(PurchaseOrderState status)
@@ -250,5 +251,20 @@ public class PurchaseOrderService : IPurchaseOrderService
             result.AddWarning("Large orders over $10,000 may require additional approval");
 
         return result;
+    }
+
+    private IEnumerable<PurchaseOrderViewModel> FilterOrdersByUserRole(IEnumerable<PurchaseOrderViewModel> orders)
+    {
+        var role = _userContextService.GetCurrentUserRole();
+        var currentUser = _userContextService.GetCurrentUser();
+
+        return role switch
+        {
+            UserRole.Administrator => orders, // Admin sees everything
+            UserRole.Purchaser => orders, // Purchaser sees everything
+            UserRole.Approver => orders, // Approver can see all orders for approval purposes
+            UserRole.Requestor => orders.Where(o => o.CreatedBy == currentUser), // Only own orders
+            _ => Enumerable.Empty<PurchaseOrderViewModel>()
+        };
     }
 }

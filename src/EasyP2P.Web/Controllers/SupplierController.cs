@@ -4,9 +4,12 @@ using EasyP2P.Web.Enums;
 using EasyP2P.Web.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
+using EasyP2P.Web.Attributes;
 
 namespace EasyP2P.Web.Controllers;
 
+[Authorize]
 public class SupplierController : Controller
 {
     private readonly ISupplierService _supplierService;
@@ -20,7 +23,7 @@ public class SupplierController : Controller
         _logger = logger;
     }
 
-    // GET: Supplier/Index
+    [RequiresPermission("ViewAllSuppliers")]
     public async Task<IActionResult> Index(string? status = null, string? search = null, string? location = null)
     {
         try
@@ -77,7 +80,7 @@ public class SupplierController : Controller
         return View(supplier);
     }
 
-    // GET: Supplier/Create
+    [RequiresPermission("CreateSupplier")]
     public IActionResult Create()
     {
         ViewBag.Statuses = GetStatusSelectList();
@@ -93,7 +96,7 @@ public class SupplierController : Controller
         return View(model);
     }
 
-    // POST: Supplier/Create
+    [RequiresPermission("CreateSupplier")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(SupplierInputModel model)
@@ -443,7 +446,8 @@ public class SupplierController : Controller
             new() { Value = "China", Text = "China" },
             new() { Value = "India", Text = "India" },
             new() { Value = "Australia", Text = "Australia" },
-            new() { Value = "Other", Text = "Other" }
+            new() { Value = "Other", Text = "Other" },
+            new() { Value = "Bulgaria", Text = "Bulgaria"}
         };
     }
 }

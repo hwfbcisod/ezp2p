@@ -85,26 +85,6 @@
                             </div>
                             <span asp-validation-for="TotalPrice" class="text-danger"></span>
                         </div>
-
-                        <!-- NEW: Purchase Order Summary -->
-                        <div class="mb-4">
-                            <div class="card bg-light">
-                                <div class="card-body">
-                                    <h6 class="card-title">Purchase Order Summary</h6>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <small><strong>Item:</strong> <span id="summaryItem">@Model.ItemName</span></small><br>
-                                            <small><strong>Quantity:</strong> <span id="summaryQuantity">@Model.Quantity</span></small>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <small><strong>Supplier:</strong> <span id="summarySupplier">Not selected</span></small><br>
-                                            <small><strong>Total:</strong> <span id="summaryTotal" class="fw-bold">$0.00</span></small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         <div class="d-flex justify-content-between">
                             <button type="submit" class="btn btn-primary">Create Purchase Order</button>
                             <a asp-controller="PurchaseApproval" asp-action="Index" class="btn btn-secondary">Cancel</a>
@@ -123,92 +103,63 @@
     <script>
         // Function to calculate total price
         function calculateTotal() {
-            var quantity = parseFloat(document.getElementById('quantity').value) || 0;
-            var unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
-            var totalPrice = quantity * unitPrice;
-            document.getElementById('totalPrice').value = totalPrice.toFixed(2);
+            const quantityElement = document.getElementById('quantity');
+            const unitPriceElement = document.getElementById('unitPrice');
+            const totalPriceElement = document.getElementById('totalPrice');
 
-            // Update summary
-            document.getElementById('summaryTotal').textContent = '$' + totalPrice.toFixed(2);
+            if (!quantityElement || !unitPriceElement || !totalPriceElement) {
+                console.warn('Required elements for calculation not found');
+                return;
+            }
+
+            const quantity = parseFloat(quantityElement.value) || 0;
+            const unitPrice = parseFloat(unitPriceElement.value) || 0;
+            const totalPrice = quantity * unitPrice;
+
+            totalPriceElement.value = totalPrice;
         }
 
-        // Function to handle supplier selection
-        async function handleSupplierChange() {
-            const supplierSelect = document.getElementById('supplierSelect');
-            const supplierId = supplierSelect.value;
-            const supplierInfo = document.getElementById('supplierInfo');
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Calculate initial total
+            calculateTotal();
 
-            if (supplierId) {
-                try {
-                    // Get supplier information via AJAX
-                    const response = await fetch(`/PurchaseOrder/GetSupplierInfo?supplierId=${supplierId}`);
-                    const data = await response.json();
-
-                    if (data.success) {
-                        const supplier = data.supplier;
-
-                        // Update supplier information display
-                        document.getElementById('supplierContact').textContent = supplier.contactPerson || 'Not provided';
-                        document.getElementById('supplierEmail').textContent = supplier.email || 'Not provided';
-                        document.getElementById('supplierPhone').textContent = supplier.phone || 'Not provided';
-                        document.getElementById('supplierTerms').textContent = supplier.paymentTerms || 'Not specified';
-
-                        // Show supplier info
-                        supplierInfo.style.display = 'block';
-
-                        // Update summary
-                        document.getElementById('summarySupplier').textContent = supplier.name;
-
-                        // Update the hidden field with supplier name for form submission
-                        document.getElementById('Supplier').value = supplier.name;
-                    } else {
-                        supplierInfo.style.display = 'none';
-                        document.getElementById('summarySupplier').textContent = 'Not selected';
-                        document.getElementById('Supplier').value = '';
-                    }
-                } catch (error) {
-                    console.error('Error fetching supplier information:', error);
-                    supplierInfo.style.display = 'none';
-                    document.getElementById('summarySupplier').textContent = 'Error loading supplier';
-                }
+            // Add event listeners with null checks
+            const unitPriceElement = document.getElementById('unitPrice');
+            if (unitPriceElement) {
+                unitPriceElement.addEventListener('input', calculateTotal);
             } else {
-                supplierInfo.style.display = 'none';
-                document.getElementById('summarySupplier').textContent = 'Not selected';
-                document.getElementById('Supplier').value = '';
+                console.warn('Unit price element not found');
             }
-        }
 
-        // Calculate on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            calculateTotal();
-
-            // Calculate when unit price changes
-            document.getElementById('unitPrice').addEventListener('input', calculateTotal);
-
-            // Handle supplier selection changes
-            document.getElementById('supplierSelect').addEventListener('change', handleSupplierChange);
-        });
-
-        // Add form submit handler to ensure total price is calculated before submit
-        document.getElementById('purchaseOrderForm').addEventListener('submit', function(e) {
-            // Validate supplier selection
             const supplierSelect = document.getElementById('supplierSelect');
-            if (!supplierSelect.value) {
-                e.preventDefault();
-                alert('Please select a supplier before creating the purchase order.');
-                supplierSelect.focus();
-                return false;
+            if (supplierSelect) {
+                supplierSelect.addEventListener('change', handleSupplierChange);
+            } else {
+                console.warn('Supplier select element not found');
             }
 
-            // Recalculate total price before submission
-            calculateTotal();
-        });
-
-        // Add some visual feedback for form validation
-        document.addEventListener('DOMContentLoaded', function() {
+            // Add form submit handler
             const form = document.getElementById('purchaseOrderForm');
-            const inputs = form.querySelectorAll('input[required], select[required]');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const supplierSelect = document.getElementById('supplierSelect');
+                    if (supplierSelect && !supplierSelect.value) {
+                        e.preventDefault();
+                        alert('Please select a supplier before creating the purchase order.');
+                        supplierSelect.focus();
+                        return false;
+                    }
 
+                    // Recalculate total price before submission
+                    calculateTotal();
+                });
+            } else {
+                console.warn('Purchase order form not found');
+            }
+
+            // Add visual feedback for form validation
+            const inputs = document.querySelectorAll('input[required], select[required]');
             inputs.forEach(input => {
                 input.addEventListener('blur', function() {
                     if (this.value) {

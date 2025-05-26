@@ -171,21 +171,6 @@ public class DashboardService : IDashboardService
             });
         }
 
-        // NEW: Supplier alerts
-        var pendingSuppliers = suppliers.Count(s => s.Status == "Pending");
-        if (pendingSuppliers > 0)
-        {
-            alerts.Add(new DashboardAlert
-            {
-                Type = "info",
-                Title = "Pending Suppliers",
-                Message = $"{pendingSuppliers} supplier{(pendingSuppliers != 1 ? "s" : "")} awaiting approval",
-                ActionUrl = "/Supplier?status=Pending",
-                ActionText = "Review Suppliers",
-                CreatedAt = DateTime.Now
-            });
-        }
-
         var suspendedSuppliers = suppliers.Count(s => s.Status == "Suspended");
         if (suspendedSuppliers > 0)
         {
