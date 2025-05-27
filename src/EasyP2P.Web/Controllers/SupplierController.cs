@@ -57,7 +57,6 @@ public class SupplierController : Controller
                     new SelectListItem { Value = "", Text = "All Statuses" },
                     new SelectListItem { Value = "Active", Text = "Active" },
                     new SelectListItem { Value = "Inactive", Text = "Inactive" },
-                    new SelectListItem { Value = "Pending", Text = "Pending" },
                     new SelectListItem { Value = "Suspended", Text = "Suspended" }
                 },
                 RatingOptions = new List<SelectListItem>
@@ -69,7 +68,6 @@ public class SupplierController : Controller
                     new SelectListItem { Value = "2", Text = "2+ Stars" },
                     new SelectListItem { Value = "1", Text = "1+ Star" }
                 },
-                // Populate existing filter values if they were passed in the query string for initial state
                 Status = status,
                 SearchTerm = search, // Assuming 'search' from query maps to generic SearchTerm for suppliers
                 Location = location,
@@ -350,9 +348,9 @@ public class SupplierController : Controller
         return RedirectToAction(nameof(Details), new { id });
     }
 
-    private List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> GetStatusSelectList()
+    private List<SelectListItem> GetStatusSelectList()
     {
-        return new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+        return new List<SelectListItem>
         {
             new() { Value = "Active", Text = "Active" },
             new() { Value = "Inactive", Text = "Inactive" },
@@ -361,9 +359,9 @@ public class SupplierController : Controller
         };
     }
 
-    private List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> GetCountrySelectList()
+    private List<SelectListItem> GetCountrySelectList()
     {
-        return new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
+        return new List<SelectListItem>
         {
             new() { Value = "", Text = "Select Country" },
             new() { Value = "USA", Text = "United States" },
