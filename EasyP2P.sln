@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SourceCodeConcatenator", "t
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyP2P.Web", "src\EasyP2P.Web\EasyP2P.Web.csproj", "{C5FC93A3-013F-485A-82D9-6D1CCEF7903A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyP2P.Web.Tests", "test\EasyP2P.Web.Tests\EasyP2P.Web.Tests.csproj", "{676F3605-98E9-44DF-AB68-B6F14CF9006E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{C5FC93A3-013F-485A-82D9-6D1CCEF7903A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C5FC93A3-013F-485A-82D9-6D1CCEF7903A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C5FC93A3-013F-485A-82D9-6D1CCEF7903A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{676F3605-98E9-44DF-AB68-B6F14CF9006E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{676F3605-98E9-44DF-AB68-B6F14CF9006E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{676F3605-98E9-44DF-AB68-B6F14CF9006E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{676F3605-98E9-44DF-AB68-B6F14CF9006E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -34,5 +40,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{80B6310E-9CFA-4309-9BF2-28B0299056E4} = {D4C07BF9-BBFB-446B-B2DD-2EF772CBD2FD}
 		{C5FC93A3-013F-485A-82D9-6D1CCEF7903A} = {49CED84E-3F27-4A91-BE65-B194ACE0CEEB}
+		{676F3605-98E9-44DF-AB68-B6F14CF9006E} = {964CF46D-2504-4061-9FE8-B194F48E1EDD}
 	EndGlobalSection
 EndGlobal
