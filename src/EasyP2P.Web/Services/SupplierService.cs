@@ -216,7 +216,6 @@ public class SupplierService : ISupplierService
         }
         catch (ValidationException)
         {
-            // Re-throw validation exceptions as-is
             throw;
         }
         catch (Exception ex)

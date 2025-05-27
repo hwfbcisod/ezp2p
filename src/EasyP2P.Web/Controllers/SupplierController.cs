@@ -13,13 +13,16 @@ namespace EasyP2P.Web.Controllers;
 public class SupplierController : Controller
 {
     private readonly ISupplierService _supplierService;
+    private readonly IUserContextService _userContextService;
     private readonly ILogger<SupplierController> _logger;
 
     public SupplierController(
         ISupplierService supplierService,
+        IUserContextService userContextService,
         ILogger<SupplierController> logger)
     {
         _supplierService = supplierService;
+        _userContextService = userContextService;
         _logger = logger;
     }
 
@@ -30,7 +33,6 @@ public class SupplierController : Controller
         {
             IEnumerable<SupplierViewModel> suppliers;
 
-            // Apply filters based on query parameters
             if (!string.IsNullOrEmpty(status) && Enum.TryParse<SupplierStatus>(status, out var supplierStatus))
             {
                 suppliers = await _supplierService.GetSuppliersByStatusAsync(supplierStatus);
@@ -41,7 +43,6 @@ public class SupplierController : Controller
             }
             else if (!string.IsNullOrEmpty(location))
             {
-                // Parse location filter (could be city, state, or country)
                 suppliers = await _supplierService.GetSuppliersByLocationAsync(location, location, location);
             }
             else
@@ -49,12 +50,10 @@ public class SupplierController : Controller
                 suppliers = await _supplierService.GetAllSuppliersAsync();
             }
 
-            // Pass filter values to view for maintaining state
             ViewBag.CurrentStatus = status;
             ViewBag.CurrentSearch = search;
             ViewBag.CurrentLocation = location;
 
-            // Get statistics for dashboard cards
             ViewBag.Statistics = await _supplierService.GetSupplierStatisticsAsync();
 
             return View(suppliers);
@@ -84,7 +83,6 @@ public class SupplierController : Controller
     public IActionResult Create()
     {
         ViewBag.Statuses = GetStatusSelectList();
-        ViewBag.PaymentTerms = GetPaymentTermsSelectList();
         ViewBag.Countries = GetCountrySelectList();
 
         var model = new SupplierInputModel
@@ -105,7 +103,7 @@ public class SupplierController : Controller
         {
             try
             {
-                string currentUser = "CurrentUser"; // Replace with actual user
+                var currentUser = _userContextService.GetCurrentUser();
 
                 var supplierId = await _supplierService.CreateSupplierAsync(model, currentUser);
 
@@ -126,9 +124,7 @@ public class SupplierController : Controller
             }
         }
 
-        // If we got this far, something failed, redisplay form
         ViewBag.Statuses = GetStatusSelectList();
-        ViewBag.PaymentTerms = GetPaymentTermsSelectList();
         ViewBag.Countries = GetCountrySelectList();
         return View(model);
     }
@@ -150,7 +146,6 @@ public class SupplierController : Controller
         }
 
         ViewBag.Statuses = GetStatusSelectList();
-        ViewBag.PaymentTerms = GetPaymentTermsSelectList();
         ViewBag.Countries = GetCountrySelectList();
 
         var inputModel = supplier.ToInputModel();
@@ -166,8 +161,7 @@ public class SupplierController : Controller
         {
             try
             {
-                string currentUser = "CurrentUser"; // Replace with actual user
-
+                var currentUser = _userContextService.GetCurrentUser();
                 var success = await _supplierService.UpdateSupplierAsync(id, model, currentUser);
 
                 if (success)
@@ -191,9 +185,7 @@ public class SupplierController : Controller
             }
         }
 
-        // If we got this far, something failed, redisplay form
         ViewBag.Statuses = GetStatusSelectList();
-        ViewBag.PaymentTerms = GetPaymentTermsSelectList();
         ViewBag.Countries = GetCountrySelectList();
         return View(model);
     }
@@ -205,7 +197,7 @@ public class SupplierController : Controller
     {
         try
         {
-            string currentUser = "CurrentUser"; // Replace with actual user
+            string currentUser = _userContextService.GetCurrentUser();
 
             var success = await _supplierService.UpdateSupplierStatusAsync(id, SupplierStatus.Active, currentUser);
 
@@ -234,7 +226,7 @@ public class SupplierController : Controller
     {
         try
         {
-            string currentUser = "CurrentUser"; // Replace with actual user
+            string currentUser = _userContextService.GetCurrentUser();
 
             var success = await _supplierService.UpdateSupplierStatusAsync(id, SupplierStatus.Inactive, currentUser);
 
@@ -263,7 +255,7 @@ public class SupplierController : Controller
     {
         try
         {
-            string currentUser = "CurrentUser"; // Replace with actual user
+            string currentUser = _userContextService.GetCurrentUser(); // Replace with actual user
 
             var success = await _supplierService.UpdateSupplierStatusAsync(id, SupplierStatus.Suspended, currentUser);
 
@@ -311,7 +303,7 @@ public class SupplierController : Controller
     {
         try
         {
-            string currentUser = "CurrentUser"; // Replace with actual user
+            string currentUser = _userContextService.GetCurrentUser();
 
             var success = await _supplierService.DeleteSupplierAsync(id, currentUser);
 
@@ -334,73 +326,6 @@ public class SupplierController : Controller
         return RedirectToAction(nameof(Details), new { id });
     }
 
-    // GET: Supplier/TopRated
-    public async Task<IActionResult> TopRated(int minRating = 4)
-    {
-        try
-        {
-            var suppliers = await _supplierService.GetTopRatedSuppliersAsync(minRating);
-            ViewBag.MinRating = minRating;
-            return View("Index", suppliers);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error loading top-rated suppliers");
-            TempData["ErrorMessage"] = "An error occurred while loading top-rated suppliers.";
-            return RedirectToAction(nameof(Index));
-        }
-    }
-
-    // AJAX endpoint for supplier search
-    [HttpGet]
-    public async Task<IActionResult> SearchSuppliers(string term)
-    {
-        try
-        {
-            var suppliers = await _supplierService.SearchSuppliersAsync(term);
-            var results = suppliers.Select(s => new
-            {
-                id = s.Id,
-                name = s.Name,
-                contactPerson = s.ContactPerson,
-                email = s.Email,
-                status = s.Status,
-                rating = s.Rating
-            });
-
-            return Json(results);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during supplier search");
-            return Json(new { error = "Search failed" });
-        }
-    }
-
-    // Helper action to get active suppliers for dropdowns in other parts of the system
-    [HttpGet]
-    public async Task<IActionResult> GetActiveSuppliers()
-    {
-        try
-        {
-            var suppliers = await _supplierService.GetActiveSuppliersAsync();
-            var results = suppliers.Select(s => new
-            {
-                id = s.Id,
-                name = s.Name,
-                paymentTerms = s.PaymentTerms
-            });
-
-            return Json(results);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving active suppliers");
-            return Json(new { error = "Failed to retrieve suppliers" });
-        }
-    }
-
-    // Helper methods for dropdown lists
     private List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> GetStatusSelectList()
     {
         return new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
@@ -409,22 +334,6 @@ public class SupplierController : Controller
             new() { Value = "Inactive", Text = "Inactive" },
             new() { Value = "Pending", Text = "Pending" },
             new() { Value = "Suspended", Text = "Suspended" }
-        };
-    }
-
-    private List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> GetPaymentTermsSelectList()
-    {
-        return new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
-        {
-            new() { Value = "", Text = "Select Payment Terms" },
-            new() { Value = "Net 15", Text = "Net 15" },
-            new() { Value = "Net 30", Text = "Net 30" },
-            new() { Value = "Net 45", Text = "Net 45" },
-            new() { Value = "Net 60", Text = "Net 60" },
-            new() { Value = "Net 90", Text = "Net 90" },
-            new() { Value = "Due on Receipt", Text = "Due on Receipt" },
-            new() { Value = "2/10 Net 30", Text = "2/10 Net 30" },
-            new() { Value = "1/15 Net 30", Text = "1/15 Net 30" }
         };
     }
 
@@ -441,13 +350,13 @@ public class SupplierController : Controller
             new() { Value = "France", Text = "France" },
             new() { Value = "Italy", Text = "Italy" },
             new() { Value = "Spain", Text = "Spain" },
-            new() { Value = "Netherlands", Text = "Netherlands" },
+            new() { Value = "Netherlands", Text = "Netherlands" },      
             new() { Value = "Japan", Text = "Japan" },
             new() { Value = "China", Text = "China" },
             new() { Value = "India", Text = "India" },
-            new() { Value = "Australia", Text = "Australia" },
-            new() { Value = "Other", Text = "Other" },
-            new() { Value = "Bulgaria", Text = "Bulgaria"}
+            new() { Value = "Australia", Text = "Australia" },          
+            new() { Value = "Bulgaria", Text = "Bulgaria"},
+            new() { Value = "Other", Text = "Other" }
         };
     }
 }

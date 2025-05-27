@@ -38,7 +38,6 @@ public class DashboardServiceTests
     [Fact]
     public async Task GetDashboardDataAsync_WithValidData_ReturnsCompleteViewModel()
     {
-        // Arrange
         var requests = CreateSampleRequests();
         var orders = CreateSampleOrders();
         var suppliers = CreateSampleSuppliers();
@@ -47,10 +46,8 @@ public class DashboardServiceTests
         _mockPoRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(orders);
         _mockSupplierRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(suppliers);
 
-        // Act
         var result = await _service.GetDashboardDataAsync();
 
-        // Assert
         result.Should().NotBeNull();
         result.Metrics.Should().NotBeNull();
         result.Alerts.Should().NotBeNull();
@@ -66,7 +63,6 @@ public class DashboardServiceTests
     [Fact]
     public async Task GetDashboardDataAsync_CalculatesMetricsCorrectly()
     {
-        // Arrange
         var requests = new List<PurchaseOrderRequestDatabaseModel>
         {
             CreateRequest(id: 1, status: "PendingApproval", priority: "Urgent"),
@@ -93,13 +89,11 @@ public class DashboardServiceTests
         _mockPoRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(orders);
         _mockSupplierRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(suppliers);
 
-        // Act
         var result = await _service.GetDashboardDataAsync();
 
-        // Assert
         result.Metrics.TotalRequests.Should().Be(4);
         result.Metrics.TotalOrders.Should().Be(3);
-        result.Metrics.PendingApprovals.Should().Be(3); // 2 POR + 1 PO
+        result.Metrics.PendingApprovals.Should().Be(3);
         result.Metrics.UrgentItems.Should().Be(1);
         result.Metrics.CompletedThisMonth.Should().Be(1);
         result.Metrics.TotalSuppliers.Should().Be(3);
@@ -110,7 +104,6 @@ public class DashboardServiceTests
     [Fact]
     public async Task GetDashboardDataAsync_GeneratesAlertsForOverdueDeliveries()
     {
-        // Arrange
         var requests = new List<PurchaseOrderRequestDatabaseModel>
         {
             CreateRequest(id: 1, status: "PendingApproval", expectedDeliveryDate: DateTime.Today.AddDays(-1)),
@@ -122,10 +115,8 @@ public class DashboardServiceTests
         _mockPoRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<PurchaseOrderDatabaseModel>());
         _mockSupplierRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<SupplierDatabaseModel>());
 
-        // Act
         var result = await _service.GetDashboardDataAsync();
 
-        // Assert
         var overdueAlert = result.Alerts.FirstOrDefault(a => a.Type == "warning" && a.Title == "Overdue Deliveries");
         overdueAlert.Should().NotBeNull();
         overdueAlert!.Message.Should().Contain("2 requests past expected delivery date");
@@ -134,22 +125,19 @@ public class DashboardServiceTests
     [Fact]
     public async Task GetDashboardDataAsync_GeneratesAlertsForHighValueOrders()
     {
-        // Arrange
         var orders = new List<PurchaseOrderDatabaseModel>
         {
             CreateOrder(id: 1, status: "PendingApproval", totalPrice: 15000m),
             CreateOrder(id: 2, status: "PendingApproval", totalPrice: 12000m),
-            CreateOrder(id: 3, status: "Approved", totalPrice: 15000m) // Shouldn't count
+            CreateOrder(id: 3, status: "Approved", totalPrice: 15000m)
         };
 
         _mockPorRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<PurchaseOrderRequestDatabaseModel>());
         _mockPoRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(orders);
         _mockSupplierRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<SupplierDatabaseModel>());
 
-        // Act
         var result = await _service.GetDashboardDataAsync();
 
-        // Assert
         var highValueAlert = result.Alerts.FirstOrDefault(a => a.Type == "info" && a.Title == "High Value Orders");
         highValueAlert.Should().NotBeNull();
         highValueAlert!.Message.Should().Contain("2 orders over $10,000 pending approval");
@@ -158,7 +146,6 @@ public class DashboardServiceTests
     [Fact]
     public async Task GetDashboardDataAsync_GeneratesSupplierAlerts()
     {
-        // Arrange
         var suppliers = new List<SupplierDatabaseModel>
         {
             CreateSupplier(id: 1, status: "Suspended"),
@@ -171,10 +158,8 @@ public class DashboardServiceTests
         _mockPoRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<PurchaseOrderDatabaseModel>());
         _mockSupplierRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(suppliers);
 
-        // Act
         var result = await _service.GetDashboardDataAsync();
 
-        // Assert
         var suspendedAlert = result.Alerts.FirstOrDefault(a => a.Title == "Suspended Suppliers");
         suspendedAlert.Should().NotBeNull();
         suspendedAlert!.Message.Should().Contain("2 suppliers currently suspended");
@@ -187,7 +172,6 @@ public class DashboardServiceTests
     [Fact]
     public async Task GetDashboardDataAsync_CalculatesFinancialSummaryCorrectly()
     {
-        // Arrange
         var currentMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
         var orders = new List<PurchaseOrderDatabaseModel>
         {
@@ -201,23 +185,22 @@ public class DashboardServiceTests
         _mockPoRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(orders);
         _mockSupplierRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<SupplierDatabaseModel>());
 
-        // Act
+        
         var result = await _service.GetDashboardDataAsync();
 
-        // Assert
-        result.Financial.TotalOrderedThisMonth.Should().Be(3500m); // 1000 + 2000 + 500
-        result.Financial.TotalApprovedThisMonth.Should().Be(3500m); // All non-rejected/cancelled
-        result.Financial.TotalPaidThisMonth.Should().Be(2000m); // Only PaymentMade
-        result.Financial.AverageOrderValue.Should().Be(2125m); // (1000+2000+5000+500)/4
+        
+        result.Financial.TotalOrderedThisMonth.Should().Be(3500m);
+        result.Financial.TotalApprovedThisMonth.Should().Be(3500m);
+        result.Financial.TotalPaidThisMonth.Should().Be(2000m);
+        result.Financial.AverageOrderValue.Should().Be(2125m);
         result.Financial.LargestOrder.Should().Be(5000m);
-        result.Financial.OrdersAwaitingPayment.Should().Be(1); // Invoiced status
+        result.Financial.OrdersAwaitingPayment.Should().Be(1);
         result.Financial.ValueAwaitingPayment.Should().Be(500m);
     }
 
     [Fact]
     public async Task GetDashboardDataAsync_GeneratesRecentActivity()
     {
-        // Arrange
         var requests = new List<PurchaseOrderRequestDatabaseModel>
         {
             CreateRequest(id: 1, status: "Approved", lastUpdated: DateTime.Now.AddHours(-1)),
@@ -234,10 +217,8 @@ public class DashboardServiceTests
         _mockPoRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(orders);
         _mockSupplierRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<SupplierDatabaseModel>());
 
-        // Act
         var result = await _service.GetDashboardDataAsync();
 
-        // Assert
         result.RecentActivity.Should().NotBeEmpty();
         result.RecentActivity.Should().HaveCountLessOrEqualTo(10);
         result.RecentActivity.Should().BeInDescendingOrder(a => a.Timestamp);
@@ -246,7 +227,6 @@ public class DashboardServiceTests
     [Fact]
     public async Task GetDashboardDataAsync_GeneratesPendingApprovals()
     {
-        // Arrange
         var requests = new List<PurchaseOrderRequestDatabaseModel>
         {
             CreateRequest(id: 1, status: "PendingApproval", priority: "Urgent", requestDate: DateTime.Now.AddDays(-2)),
@@ -262,16 +242,13 @@ public class DashboardServiceTests
         _mockPoRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(orders);
         _mockSupplierRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<SupplierDatabaseModel>());
 
-        // Act
         var result = await _service.GetDashboardDataAsync();
 
-        // Assert
         result.PendingApprovals.Should().HaveCount(3);
         result.PendingApprovals.Should().Contain(p => p.Type == "POR" && p.Id == 1);
         result.PendingApprovals.Should().Contain(p => p.Type == "POR" && p.Id == 2);
         result.PendingApprovals.Should().Contain(p => p.Type == "PO" && p.Id == 1);
 
-        // Should be ordered by urgent first, then days waiting
         var firstItem = result.PendingApprovals.First();
         firstItem.Priority.Should().Be("Urgent");
     }
@@ -279,7 +256,6 @@ public class DashboardServiceTests
     [Fact]
     public async Task GetDashboardDataAsync_GeneratesStatusBreakdown()
     {
-        // Arrange
         var requests = new List<PurchaseOrderRequestDatabaseModel>
         {
             CreateRequest(id: 1, status: "PendingApproval"),
@@ -292,10 +268,8 @@ public class DashboardServiceTests
         _mockPoRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<PurchaseOrderDatabaseModel>());
         _mockSupplierRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<SupplierDatabaseModel>());
 
-        // Act
         var result = await _service.GetDashboardDataAsync();
 
-        // Assert
         result.RequestStatusBreakdown.Should().HaveCount(3);
 
         var pendingBreakdown = result.RequestStatusBreakdown.FirstOrDefault(s => s.Status == "PendingApproval");
@@ -307,10 +281,8 @@ public class DashboardServiceTests
     [Fact]
     public async Task GetDashboardDataAsync_GeneratesTrendData()
     {
-        // Arrange
         var requests = new List<PurchaseOrderRequestDatabaseModel>();
 
-        // Add requests for last 30 days
         for (int i = 0; i < 30; i++)
         {
             var date = DateTime.Now.AddDays(-i);
@@ -321,10 +293,8 @@ public class DashboardServiceTests
         _mockPoRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<PurchaseOrderDatabaseModel>());
         _mockSupplierRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<SupplierDatabaseModel>());
 
-        // Act
         var result = await _service.GetDashboardDataAsync();
 
-        // Assert
         result.RequestTrends.Should().HaveCount(30);
         result.RequestTrends.Should().OnlyContain(t => t.Requests >= 0);
         result.RequestTrends.Should().OnlyContain(t => t.Approvals >= 0);
@@ -333,13 +303,12 @@ public class DashboardServiceTests
     [Fact]
     public async Task GetDashboardDataAsync_GeneratesDepartmentSummaries()
     {
-        // Arrange
         var requests = new List<PurchaseOrderRequestDatabaseModel>
         {
             CreateRequest(id: 1, department: "IT", itemName: "Laptop"),
             CreateRequest(id: 2, department: "IT", itemName: "Monitor"),
             CreateRequest(id: 3, department: "HR", itemName: "Desk"),
-            CreateRequest(id: 4, department: "IT", itemName: "Laptop") // Duplicate for top item
+            CreateRequest(id: 4, department: "IT", itemName: "Laptop")
         };
 
         var orders = new List<PurchaseOrderDatabaseModel>
@@ -352,22 +321,19 @@ public class DashboardServiceTests
         _mockPoRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(orders);
         _mockSupplierRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<SupplierDatabaseModel>());
 
-        // Act
         var result = await _service.GetDashboardDataAsync();
 
-        // Assert
         result.DepartmentSummaries.Should().HaveCount(2);
 
         var itSummary = result.DepartmentSummaries.FirstOrDefault(d => d.Department == "IT");
         itSummary.Should().NotBeNull();
-        itSummary!.TopItem.Should().Be("Laptop"); // Most frequent item
+        itSummary!.TopItem.Should().Be("Laptop");
         itSummary.TotalValue.Should().Be(1000m);
     }
 
     [Fact]
     public async Task GetDashboardDataAsync_GeneratesSupplierSummaries()
     {
-        // Arrange
         var suppliers = new List<SupplierDatabaseModel>
         {
             CreateSupplier(id: 1, name: "Supplier A", status: "Active", rating: 5, paymentTerms: "Net 30"),
@@ -386,11 +352,9 @@ public class DashboardServiceTests
         _mockPoRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(orders);
         _mockSupplierRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(suppliers);
 
-        // Act
         var result = await _service.GetDashboardDataAsync();
 
-        // Assert
-        result.SupplierSummaries.Should().HaveCount(2); // Only active suppliers
+        result.SupplierSummaries.Should().HaveCount(2);
         result.SupplierSummaries.Should().BeInDescendingOrder(s => s.TotalValue);
 
         var topSupplier = result.SupplierSummaries.First();
@@ -403,15 +367,12 @@ public class DashboardServiceTests
     [Fact]
     public async Task GetDashboardDataAsync_WithRepositoryException_ReturnsEmptyDashboard()
     {
-        // Arrange
         _mockPorRepository.Setup(r => r.GetAllAsync()).ThrowsAsync(new Exception("Database error"));
         _mockPoRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<PurchaseOrderDatabaseModel>());
         _mockSupplierRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<SupplierDatabaseModel>());
 
-        // Act
         var result = await _service.GetDashboardDataAsync();
 
-        // Assert
         result.Should().NotBeNull();
         result.Metrics.Should().NotBeNull();
         result.Alerts.Should().BeEmpty();

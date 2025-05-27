@@ -1,5 +1,4 @@
-﻿
-using EasyP2P.Web.Attributes;
+﻿using EasyP2P.Web.Attributes;
 using EasyP2P.Web.Models;
 using EasyP2P.Web.Services;
 using iText.Kernel.Colors;
@@ -249,7 +248,6 @@ public class PurchaseOrderController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // NEW: Helper method to load suppliers for dropdown
     private async Task LoadSuppliersForDropdown()
     {
         try

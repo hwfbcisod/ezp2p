@@ -28,7 +28,6 @@ public class PurchaseOrderRequestController : Controller
     {
         var filteredRequests = await _purchaseOrderRequestService.GetFilteredRequestsAsync();
 
-        // Add user context to ViewBag for conditional UI rendering
         ViewBag.UserRole = _userContextService.GetCurrentUserRole();
         ViewBag.CanViewAllDepartments = _userContextService.CanViewAllDepartments();
 
@@ -44,7 +43,6 @@ public class PurchaseOrderRequestController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        // Set permission flags for the view
         ViewBag.CanApprove = request.CanApprove && _userContextService.HasPermission("ApprovePOR");
         ViewBag.CanReject = request.CanReject && _userContextService.HasPermission("RejectPOR");
         ViewBag.CanCancel = request.CanCancel && (
@@ -70,7 +68,6 @@ public class PurchaseOrderRequestController : Controller
     {
         if (ModelState.IsValid)
         {
-            // Validate using service layer business rules
             var validationResult = await _purchaseOrderRequestService.ValidateRequestAsync(model);
 
             if (!validationResult.IsValid)
@@ -91,7 +88,7 @@ public class PurchaseOrderRequestController : Controller
             {
                 try
                 {
-                    string currentUser = _userContextService.GetCurrentUser();
+                    var currentUser = _userContextService.GetCurrentUser();
                     var id = await _purchaseOrderRequestService.CreateRequestAsync(model, currentUser);
 
                     _logger.LogInformation("New POR created with ID {Id}: Item={ItemName}, Quantity={Quantity}",
@@ -118,7 +115,6 @@ public class PurchaseOrderRequestController : Controller
     [RequiresPermission("ApprovePOR")]
     public async Task<IActionResult> Approve(int id)
     {
-        // Double-check permission at entity level
         var request = await _purchaseOrderRequestService.GetRequestByIdAsync(id, enforcePermissions: true);
         if (request == null || !request.CanApprove)
         {
@@ -126,7 +122,6 @@ public class PurchaseOrderRequestController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        // Check department-level permissions for approvers
         if (_userContextService.GetCurrentUserRole() == UserRole.Approver)
         {
             var currentDepartment = _userContextService.GetCurrentUserDepartment();
@@ -137,7 +132,6 @@ public class PurchaseOrderRequestController : Controller
             }
         }
 
-        // Proceed with approval
         var success = await _purchaseOrderRequestService.ApproveRequestAsync(id, _userContextService.GetCurrentUser());
 
         if (success)
@@ -160,8 +154,8 @@ public class PurchaseOrderRequestController : Controller
     {
         try
         {
-            string currentUser = _userContextService.GetCurrentUser();
-            string rejectionReason = "Rejected via web interface";
+            var currentUser = _userContextService.GetCurrentUser();
+            var rejectionReason = "Rejected via web interface";
 
             var success = await _purchaseOrderRequestService.RejectRequestAsync(id, currentUser, rejectionReason);
 
@@ -190,8 +184,8 @@ public class PurchaseOrderRequestController : Controller
     {
         try
         {
-            string currentUser = "CurrentUser"; // Replace with actual user
-            string cancellationReason = "Cancelled via web interface"; // Could be from form input
+            var currentUser = _userContextService.GetCurrentUser();
+            var cancellationReason = "Cancelled via web interface"; // Could be from form input
 
             var success = await _purchaseOrderRequestService.CancelRequestAsync(id, currentUser, cancellationReason);
 

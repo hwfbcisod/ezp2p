@@ -229,7 +229,6 @@ public class PurchaseOrderRequestService : IPurchaseOrderRequestService
     {
         try
         {
-            // Get all requests that require attention (pending, urgent, etc.)
             var allRequests = await _repository.GetAllAsync();
             var viewModels = allRequests.ToViewModels();
 
@@ -313,7 +312,6 @@ public class PurchaseOrderRequestService : IPurchaseOrderRequestService
         var pendingRequests = await _repository.GetByStatusAsync(PurchaseOrderRequestState.PendingApproval);
         var viewModels = pendingRequests.ToViewModels();
 
-        // Only show requests that the current user can approve
         return FilterRequestsByUserRole(viewModels)
             .Where(r => r.Status == "PendingApproval");
     }

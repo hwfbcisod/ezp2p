@@ -1,10 +1,8 @@
-﻿using EasyP2P.Web.Models;
-using EasyP2P.Web.Models.Database;
+﻿using EasyP2P.Web.Data.Models;
 using EasyP2P.Web.Enums;
+using EasyP2P.Web.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using EasyP2P.Web.Data.Models;
 
 namespace EasyP2P.Web.Controllers;
 

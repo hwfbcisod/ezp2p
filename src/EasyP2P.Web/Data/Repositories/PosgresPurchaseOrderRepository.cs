@@ -266,7 +266,7 @@ public class PostgresPurchaseOrderRepository : IPurchaseOrderRepository
             TotalPrice = reader.GetDecimal("total_price"),
             Supplier = reader.GetString("supplier"),
             OrderDate = reader.GetDateTime("order_date"),
-            DeliveryDate = DateTime.MinValue, // TODO: Add this column to database
+            DeliveryDate = DateTime.MinValue,
             CreatedBy = reader.GetString("created_by"),
             Status = reader.GetString("status")
         };

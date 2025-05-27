@@ -37,17 +37,14 @@ public class SupplierServiceTests
     [Fact]
     public async Task GetSupplierByIdAsync_ExistingSupplier_ReturnsViewModel()
     {
-        // Arrange
         var supplierId = 1;
         var dbModel = CreateValidSupplierDatabaseModel();
 
         _mockRepository.Setup(r => r.GetByIdAsync(supplierId))
             .ReturnsAsync(dbModel);
 
-        // Act
         var result = await _service.GetSupplierByIdAsync(supplierId);
 
-        // Assert
         result.Should().NotBeNull();
         result!.Id.Should().Be(dbModel.Id);
         result.Name.Should().Be(dbModel.Name);
@@ -57,32 +54,26 @@ public class SupplierServiceTests
     [Fact]
     public async Task GetSupplierByIdAsync_NonExistingSupplier_ReturnsNull()
     {
-        // Arrange
         var supplierId = 999;
 
         _mockRepository.Setup(r => r.GetByIdAsync(supplierId))
             .ReturnsAsync((SupplierDatabaseModel?)null);
 
-        // Act
         var result = await _service.GetSupplierByIdAsync(supplierId);
 
-        // Assert
         result.Should().BeNull();
     }
 
     [Fact]
     public async Task GetSupplierByIdAsync_RepositoryThrowsException_ReturnsNull()
     {
-        // Arrange
         var supplierId = 1;
 
         _mockRepository.Setup(r => r.GetByIdAsync(supplierId))
             .ThrowsAsync(new Exception("Database error"));
 
-        // Act
         var result = await _service.GetSupplierByIdAsync(supplierId);
 
-        // Assert
         result.Should().BeNull();
     }
 
@@ -93,7 +84,6 @@ public class SupplierServiceTests
     [Fact]
     public async Task CreateSupplierAsync_ValidModel_ReturnsId()
     {
-        // Arrange
         var model = CreateValidSupplierInputModel();
         var createdBy = "user@test.com";
         var expectedId = 123;
@@ -102,10 +92,8 @@ public class SupplierServiceTests
         _mockRepository.Setup(r => r.CreateAsync(model, createdBy))
             .ReturnsAsync(expectedId);
 
-        // Act
         var result = await _service.CreateSupplierAsync(model, createdBy);
 
-        // Assert
         result.Should().Be(expectedId);
         _mockRepository.Verify(r => r.CreateAsync(model, createdBy), Times.Once);
     }
@@ -113,14 +101,12 @@ public class SupplierServiceTests
     [Fact]
     public async Task CreateSupplierAsync_DuplicateName_ThrowsValidationException()
     {
-        // Arrange
         var model = CreateValidSupplierInputModel();
         var createdBy = "user@test.com";
 
         _mockRepository.Setup(r => r.NameExistsAsync(model.Name, null))
             .ReturnsAsync(true);
 
-        // Act & Assert
         await _service.Invoking(s => s.CreateSupplierAsync(model, createdBy))
             .Should().ThrowAsync<ValidationException>()
             .WithMessage("Validation failed: A supplier with this name already exists");
@@ -132,12 +118,10 @@ public class SupplierServiceTests
     [InlineData(null)]
     public async Task CreateSupplierAsync_EmptyName_ThrowsValidationException(string? name)
     {
-        // Arrange
         var model = CreateValidSupplierInputModel();
         model.Name = name!;
         var createdBy = "user@test.com";
 
-        // Act & Assert
         await _service.Invoking(s => s.CreateSupplierAsync(model, createdBy))
             .Should().ThrowAsync<ValidationException>()
             .WithMessage("Validation failed: Supplier name is required");
@@ -149,14 +133,12 @@ public class SupplierServiceTests
     [InlineData("test@")]
     public async Task CreateSupplierAsync_InvalidEmail_ThrowsValidationException(string invalidEmail)
     {
-        // Arrange
         var model = CreateValidSupplierInputModel();
         model.Email = invalidEmail;
         var createdBy = "user@test.com";
 
         SetupValidationMocks(model, nameExists: false);
 
-        // Act & Assert
         await _service.Invoking(s => s.CreateSupplierAsync(model, createdBy))
             .Should().ThrowAsync<ValidationException>()
             .WithMessage("Validation failed: Invalid email format");
@@ -168,14 +150,12 @@ public class SupplierServiceTests
     [InlineData("invalid://url")]
     public async Task CreateSupplierAsync_InvalidWebsite_ThrowsValidationException(string invalidWebsite)
     {
-        // Arrange
         var model = CreateValidSupplierInputModel();
         model.Website = invalidWebsite;
         var createdBy = "user@test.com";
 
         SetupValidationMocks(model, nameExists: false);
 
-        // Act & Assert
         await _service.Invoking(s => s.CreateSupplierAsync(model, createdBy))
             .Should().ThrowAsync<ValidationException>()
             .WithMessage("Validation failed: Invalid website URL format");
@@ -187,14 +167,12 @@ public class SupplierServiceTests
     [InlineData(-1)]
     public async Task CreateSupplierAsync_InvalidRating_ThrowsValidationException(int invalidRating)
     {
-        // Arrange
         var model = CreateValidSupplierInputModel();
         model.Rating = invalidRating;
         var createdBy = "user@test.com";
 
         SetupValidationMocks(model, nameExists: false);
 
-        // Act & Assert
         await _service.Invoking(s => s.CreateSupplierAsync(model, createdBy))
             .Should().ThrowAsync<ValidationException>()
             .WithMessage("Validation failed: Rating must be between 1 and 5");
@@ -207,7 +185,6 @@ public class SupplierServiceTests
     [Fact]
     public async Task UpdateSupplierStatusAsync_ValidStatusChange_ReturnsTrue()
     {
-        // Arrange
         var supplierId = 1;
         var newStatus = SupplierStatus.Active;
         var updatedBy = "admin@test.com";
@@ -215,10 +192,8 @@ public class SupplierServiceTests
         _mockRepository.Setup(r => r.UpdateStatusAsync(supplierId, newStatus, updatedBy))
             .ReturnsAsync(true);
 
-        // Act
         var result = await _service.UpdateSupplierStatusAsync(supplierId, newStatus, updatedBy);
 
-        // Assert
         result.Should().BeTrue();
         _mockRepository.Verify(r => r.UpdateStatusAsync(supplierId, newStatus, updatedBy), Times.Once);
     }
@@ -226,7 +201,6 @@ public class SupplierServiceTests
     [Fact]
     public async Task UpdateSupplierStatusAsync_RepositoryFails_ReturnsFalse()
     {
-        // Arrange
         var supplierId = 1;
         var newStatus = SupplierStatus.Active;
         var updatedBy = "admin@test.com";
@@ -234,10 +208,8 @@ public class SupplierServiceTests
         _mockRepository.Setup(r => r.UpdateStatusAsync(supplierId, newStatus, updatedBy))
             .ReturnsAsync(false);
 
-        // Act
         var result = await _service.UpdateSupplierStatusAsync(supplierId, newStatus, updatedBy);
 
-        // Assert
         result.Should().BeFalse();
     }
 
@@ -248,7 +220,6 @@ public class SupplierServiceTests
     [Fact]
     public async Task GetAllSuppliersAsync_AdministratorRole_ReturnsAllSuppliers()
     {
-        // Arrange
         var allSuppliers = new List<SupplierDatabaseModel>
         {
             CreateValidSupplierDatabaseModel(id: 1, status: "Active"),
@@ -261,17 +232,14 @@ public class SupplierServiceTests
         _mockUserContextService.Setup(u => u.GetCurrentUserRole())
             .Returns(UserRole.Administrator);
 
-        // Act
         var result = await _service.GetAllSuppliersAsync();
 
-        // Assert
         result.Should().HaveCount(3);
     }
 
     [Fact]
     public async Task GetAllSuppliersAsync_RequestorRole_ReturnsOnlyActiveSuppliers()
     {
-        // Arrange
         var allSuppliers = new List<SupplierDatabaseModel>
         {
             CreateValidSupplierDatabaseModel(id: 1, status: "Active"),
@@ -284,10 +252,8 @@ public class SupplierServiceTests
         _mockUserContextService.Setup(u => u.GetCurrentUserRole())
             .Returns(UserRole.Requestor);
 
-        // Act
         var result = await _service.GetAllSuppliersAsync();
 
-        // Assert
         result.Should().HaveCount(2);
         result.Should().OnlyContain(s => s.Status == "Active");
     }
@@ -303,33 +269,27 @@ public class SupplierServiceTests
     [InlineData("Suspended", false)]
     public async Task CanDeleteSupplierAsync_VariousStatuses_ReturnsExpectedResult(string status, bool expectedResult)
     {
-        // Arrange
         var supplierId = 1;
         var supplier = CreateValidSupplierDatabaseModel(status: status);
 
         _mockRepository.Setup(r => r.GetByIdAsync(supplierId))
             .ReturnsAsync(supplier);
 
-        // Act
         var result = await _service.CanDeleteSupplierAsync(supplierId);
 
-        // Assert
         result.Should().Be(expectedResult);
     }
 
     [Fact]
     public async Task CanDeleteSupplierAsync_SupplierNotFound_ReturnsFalse()
     {
-        // Arrange
         var supplierId = 999;
 
         _mockRepository.Setup(r => r.GetByIdAsync(supplierId))
             .ReturnsAsync((SupplierDatabaseModel?)null);
 
-        // Act
         var result = await _service.CanDeleteSupplierAsync(supplierId);
 
-        // Assert
         result.Should().BeFalse();
     }
 
@@ -340,7 +300,6 @@ public class SupplierServiceTests
     [Fact]
     public async Task SearchSuppliersAsync_ValidSearchTerm_ReturnsMatchingSuppliers()
     {
-        // Arrange
         var searchTerm = "Acme";
         var matchingSuppliers = new List<SupplierDatabaseModel>
         {
@@ -351,10 +310,8 @@ public class SupplierServiceTests
         _mockRepository.Setup(r => r.SearchByNameAsync(searchTerm))
             .ReturnsAsync(matchingSuppliers);
 
-        // Act
         var result = await _service.SearchSuppliersAsync(searchTerm);
 
-        // Assert
         result.Should().HaveCount(2);
         result.Should().OnlyContain(s => s.Name.Contains("Acme"));
     }
@@ -365,7 +322,6 @@ public class SupplierServiceTests
     [InlineData(null)]
     public async Task SearchSuppliersAsync_EmptySearchTerm_ReturnsAllSuppliers(string? searchTerm)
     {
-        // Arrange
         var allSuppliers = new List<SupplierDatabaseModel>
         {
             CreateValidSupplierDatabaseModel(id: 1),
@@ -377,10 +333,8 @@ public class SupplierServiceTests
         _mockUserContextService.Setup(u => u.GetCurrentUserRole())
             .Returns(UserRole.Administrator);
 
-        // Act
         var result = await _service.SearchSuppliersAsync(searchTerm!);
 
-        // Assert
         result.Should().HaveCount(2);
         _mockRepository.Verify(r => r.GetAllAsync(), Times.Once);
         _mockRepository.Verify(r => r.SearchByNameAsync(It.IsAny<string>()), Times.Never);

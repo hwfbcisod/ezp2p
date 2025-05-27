@@ -63,7 +63,6 @@ public static class PermissionMatrix
 
     public static bool CanTransition(UserRole role, string fromState, string toState, string entityType)
     {
-        // Administrator can do everything
         if (role == UserRole.Administrator)
             return true;
 

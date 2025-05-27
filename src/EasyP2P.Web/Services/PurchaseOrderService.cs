@@ -45,7 +45,6 @@ public class PurchaseOrderService : IPurchaseOrderService
 
         var viewModel = dbModel.ToViewModel();
 
-        // Check if user can view this order
         if (!_userContextService.CanViewEntity("PO", viewModel.CreatedBy))
         {
             _logger.LogWarning("User {User} attempted to access PO {Id} without permission",
