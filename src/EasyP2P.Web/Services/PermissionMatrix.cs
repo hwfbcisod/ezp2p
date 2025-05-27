@@ -24,7 +24,9 @@ public static class PermissionMatrix
         },
         [UserRole.Administrator] = new()
         {
-            "*" // All permissions
+            "*", // All permissions
+            "ManageUsers", "ViewAllUsers", "CreateUser", "EditUser", "DeleteUser",
+            "ResetUserPassword", "ToggleUserStatus"
         }
     };
 

@@ -8,10 +8,38 @@ using System.Security.Claims;
 namespace EasyP2P.Web.Data.Stores;
 
 public class PostgresUserStore : IUserStore<ApplicationUser>, IUserPasswordStore<ApplicationUser>,
-    IUserEmailStore<ApplicationUser>, IUserClaimStore<ApplicationUser>
+    IUserEmailStore<ApplicationUser>, IUserClaimStore<ApplicationUser>, IQueryableUserStore<ApplicationUser>
 {
     private readonly string _connectionString;
     private readonly ILogger<PostgresUserStore> _logger;
+
+    public IQueryable<ApplicationUser> Users
+    {
+        get
+        {
+            try
+            {
+                var users = new List<ApplicationUser>();
+                using var connection = new NpgsqlConnection(_connectionString);
+                connection.Open();
+
+                var query = "SELECT * FROM users";
+                using var command = new NpgsqlCommand(query, connection);
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    users.Add(MapToUser(reader));
+                }
+                return users.AsQueryable();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving users for IQueryableUserStore");
+                return new List<ApplicationUser>().AsQueryable();
+            }
+        }
+    }
+
 
     public PostgresUserStore(IConfiguration configuration, ILogger<PostgresUserStore> logger)
     {

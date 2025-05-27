@@ -1,0 +1,227 @@
+﻿@model IEnumerable<EasyP2P.Web.Models.UserManagementViewModel>
+
+@{
+    ViewData["Title"] = "User Management";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>
+            <i class="bi bi-people"></i> User Management
+        </h2>
+        <div>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> New User
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        @{
+            var totalUsers = Model.Count();
+            var activeUsers = Model.Count(u => u.IsActive);
+            var inactiveUsers = totalUsers - activeUsers;
+            var adminUsers = Model.Count(u => u.Role == EasyP2P.Web.Enums.UserRole.Administrator);
+            var lockedUsers = Model.Count(u => u.IsLockedOut);
+        }
+
+        <div class="col-md-2">
+            <div class="card text-center bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">@totalUsers</h5>
+                    <p class="card-text">Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">@activeUsers</h5>
+                    <p class="card-text">Active Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center bg-secondary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">@inactiveUsers</h5>
+                    <p class="card-text">Inactive Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">@adminUsers</h5>
+                    <p class="card-text">Administrators</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">@lockedUsers</h5>
+                    <p class="card-text">Locked Out</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">@Model.Count(u => !u.EmailConfirmed)</h5>
+                    <p class="card-text">Unconfirmed</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+    }
+
+    <!-- User Table -->
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5><i class="bi bi-table"></i> All Users</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Department</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Created Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var user in Model)
+                            {
+                                        <tr class="@(user.IsLockedOut ? "table-warning" : "")">
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div>
+                                                        <strong>@user.FullName</strong>
+                                                @if (user.IsLockedOut)
+                                                {
+                                                                <br>
+
+                                                    <small class="text-warning"><i class="bi bi-lock"></i> Locked Out</small>
+                                                }
+                                                @if (!user.EmailConfirmed)
+                                                {
+                                                                <br>
+
+                                                    <small class="text-muted"><i class="bi bi-envelope-x"></i> Email Not Confirmed</small>
+                                                }
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                        @user.Email
+                                        @if (!user.EmailConfirmed)
+                                        {
+                                                        <i class="bi bi-exclamation-triangle text-warning" title="Email not confirmed"></i>
+                                        }
+                                            </td>
+                                            <td>@(user.Department ?? "Not Assigned")</td>
+                                            <td>
+                                                <span class="badge @user.RoleBadgeClass">
+                                            @user.Role
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge @user.StatusBadgeClass">
+                                            @user.StatusText
+                                                </span>
+                                            </td>
+                                            <td>@user.CreatedDate.ToString("yyyy-MM-dd")</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a asp-action="Details" asp-route-id="@user.Id" 
+                                                       class="btn btn-info btn-sm" title="View Details">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    <a asp-action="Edit" asp-route-id="@user.Id" 
+                                                       class="btn btn-primary btn-sm" title="Edit User">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <form asp-action="ToggleStatus" asp-route-id="@user.Id" method="post" style="display: inline;">
+                                                @Html.AntiForgeryToken()
+                                                        <button type="submit" 
+                                                                class="btn btn-@(user.IsActive ? "warning" : "success") btn-sm"
+                                                                onclick="return confirm('@(user.IsActive ? "Deactivate" : "Activate") user @user.Email?')"
+                                                                title="@(user.IsActive ? "Deactivate" : "Activate")">
+                                                            <i class="bi bi-@(user.IsActive ? "pause" : "play")"></i>
+                                                        </button>
+                                                    </form>
+                                            @if (user.Role != EasyP2P.Web.Enums.UserRole.Administrator)
+                                            {
+                                                            <a asp-action="Delete" asp-route-id="@user.Id" 
+                                                               class="btn btn-danger btn-sm" title="Delete User">
+                                                                <i class="bi bi-trash"></i>
+                                                            </a>
+                                            }
+                                                </div>
+                                            </td>
+                                        </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+            }
+            else
+            {
+                    <div class="text-center py-5">
+                        <i class="bi bi-people display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">No Users Found</h4>
+                        <p class="text-muted">Create your first user to get started.</p>
+                        <a asp-action="Create" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create First User
+                        </a>
+                    </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 0.5rem;
+    }
+
+    .btn-group .btn {
+        margin-left: 1px;
+    }
+
+    .btn-group .btn:first-child {
+        margin-left: 0;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.03);
+    }
+
+    .badge {
+        font-size: 0.75em;
+    }
+</style>

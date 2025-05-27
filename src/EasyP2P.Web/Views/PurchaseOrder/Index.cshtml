@@ -224,10 +224,7 @@
                                                 <i class="bi bi-file-earmark-pdf"></i>
                                             </a>
 
-                                            @{
-                                                //TODO: Fix user role checks (User.IsInRole(UserRole.Approver.ToString()) || User.IsInRole(UserRole.Administrator.ToString()))}
-                                            }
-                                            @if (item.Status == Enum.GetName(PurchaseOrderState.PendingApproval))
+                                            @if (item.Status == Enum.GetName(PurchaseOrderState.PendingApproval) && (User.FindFirstValue("UserRole") == "Approver" || User.FindFirstValue("UserRole") == "Administrator"))
                                             {
                                                 <form asp-action="Approve" asp-route-id="@item.Id" method="post" style="display: inline;" class="ms-1">
                                                     @Html.AntiForgeryToken()
@@ -247,7 +244,7 @@
                                                 </form>
                                             }
 
-                                            @if (item.Status == Enum.GetName(PurchaseOrderState.PendingPayment))
+                                            @if (item.Status == Enum.GetName(PurchaseOrderState.PendingPayment) && (User.FindFirstValue("UserRole") == "Approver" || User.FindFirstValue("UserRole") == "Administrator"))
                                             {
                                                 <form asp-action="Pay" asp-route-id="@item.Id" method="post" style="display: inline;" class="ms-1">
                                                     @Html.AntiForgeryToken()
@@ -256,11 +253,7 @@
                                                     </button>
                                                 </form>
                                             }
-
-                                            @{
-                                                //TODO: Fix user role checks (User.IsInRole(UserRole.Approver.ToString()) || User.IsInRole(UserRole.Administrator.ToString()))}
-                                            }
-                                            @if (item.Status == Enum.GetName(PurchaseOrderState.Acknowledged))
+                                            @if (item.Status == Enum.GetName(PurchaseOrderState.Acknowledged) && (User.FindFirstValue("UserRole") == "Approver" || User.FindFirstValue("UserRole") == "Administrator"))
                                             {
                                                 <form asp-action="AttachDeliveryNote" asp-route-id="@item.Id" method="post" enctype="multipart/form-data" style="display: inline;" class="ms-1">
                                                     @Html.AntiForgeryToken()
@@ -271,41 +264,17 @@
                                                 </form>
                                             }
 
-                                            @if (item.Status == Enum.GetName(PurchaseOrderState.FullyReceived))
+                                            @if (item.Status == Enum.GetName(PurchaseOrderState.FullyReceived) && (User.FindFirstValue("UserRole") == "Approver" || User.FindFirstValue("UserRole") == "Administrator"))
                                             {
                                                 <form asp-action="AttachInvoice" asp-route-id="@item.Id" method="post" enctype="multipart/form-data" style="display: inline;" class="ms-1">
                                                     @Html.AntiForgeryToken()
                                                     <input type="file" name="invoice" accept=".pdf,.doc,.docx,.jpg,.png" style="display: none;" onchange="this.form.submit()" id="invoice-@item.Id" />
-                                                    @if (item.Status == Enum.GetName(PurchaseOrderState.Acknowledged))
-                                                    {
-                                                        <form asp-action="AttachDeliveryNote" asp-route-id="@item.Id" method="post" enctype="multipart/form-data" style="display: inline;" class="ms-1">
-                                                            @Html.AntiForgeryToken()
-                                                            <input type="file" name="deliveryNote" accept=".pdf,.doc,.docx,.jpg,.png" style="display: none;" onchange="this.form.submit()" id="note-@item.Id" />
-                                                            <label for="note-@item.Id" class="btn btn-success btn-sm" title="Attach Delivery Note" style="margin-bottom:0;">
-                                                                <i class="bi bi-truck"></i> Delivery Note
-                                                            </label>
-                                                        </form>
-                                                    }
-
-                                                    @if (item.Status == Enum.GetName(PurchaseOrderState.FullyReceived))
-                                                    {
-                                                        <form asp-action="AttachInvoice" asp-route-id="@item.Id" method="post" enctype="multipart/form-data" style="display: inline;" class="ms-1">
-                                                            @Html.AntiForgeryToken()
-                                                            <input type="file" name="invoice" accept=".pdf,.doc,.docx,.jpg,.png" style="display: none;" onchange="this.form.submit()" id="invoice-@item.Id" />
-                                                            <label for="invoice-@item.Id" class="btn btn-warning btn-sm" title="Attach Invoice" style="margin-bottom:0;">
-                                                                <i class="bi bi-receipt"></i> Invoice
-                                                            </label>
-                                                        </form>
-                                                    }
                                                     <label for="invoice-@item.Id" class="btn btn-primary btn-sm" title="Attach Invoice" style="margin-bottom:0;">
                                                         <i class="bi bi-upload"></i>
                                                     </label>
                                                 </form>
                                             }
 
-                                            @{
-                                                //TODO: Fix user role checks (User.IsInRole(UserRole.Approver.ToString()) || User.IsInRole(UserRole.Administrator.ToString()))}
-                                            }
                                             @if (item.Status != Enum.GetName(PurchaseOrderState.Cancelled) && item.Status != Enum.GetName(PurchaseOrderState.Rejected) && item.Status != Enum.GetName(PurchaseOrderState.Completed))
                                             {
                                                 <form asp-action="Cancel" asp-route-id="@item.Id" method="post" style="display: inline;" class="ms-1">

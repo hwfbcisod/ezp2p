@@ -1,0 +1,114 @@
+﻿@model EasyP2P.Web.Models.UserManagementViewModel
+
+@{
+    ViewData["Title"] = "Delete User";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4><i class="bi bi-exclamation-triangle"></i> Delete User</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Warning:</strong> This action cannot be undone. Are you sure you want to delete this user account?
+                    </div>
+
+                    <h5>User Information</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Name:</dt>
+                                <dd class="col-sm-8">@Model.FullName</dd>
+
+                                <dt class="col-sm-4">Email:</dt>
+                                <dd class="col-sm-8">@Model.Email</dd>
+
+                                <dt class="col-sm-4">Department:</dt>
+                                <dd class="col-sm-8">@(Model.Department ?? "Not assigned")</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Role:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge @Model.RoleBadgeClass">
+                                        @Model.Role
+                                    </span>
+                                </dd>
+
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge @Model.StatusBadgeClass">
+                                        @Model.StatusText
+                                    </span>
+                                </dd>
+
+                                <dt class="col-sm-4">Created:</dt>
+                                <dd class="col-sm-8">@Model.CreatedDate.ToString("yyyy-MM-dd")</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    @if (Model.Role == EasyP2P.Web.Enums.UserRole.Administrator)
+                    {
+                        <div class="alert alert-warning mt-3">
+                            <i class="bi bi-shield-exclamation"></i>
+                            <strong>Administrator Account:</strong> This is an administrator account with full system privileges.
+                            Deleting this account may impact system administration capabilities.
+                        </div>
+                    }
+
+                    <!-- Data Impact Warning -->
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Data Impact:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>All purchase order requests created by this user will remain in the system</li>
+                            <li>Historical records will show this user as "[Deleted User]"</li>
+                            <li>Any pending approvals assigned to this user may need to be reassigned</li>
+                            <li>The user will be immediately unable to access the system</li>
+                        </ul>
+                    </div>
+
+                    <form asp-action="Delete" method="post" class="d-flex justify-content-between mt-4">
+                        @Html.AntiForgeryToken()
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-danger"
+                                onclick="return confirm('Are you absolutely sure you want to delete user @Model.Email? This action cannot be undone.')">
+                            <i class="bi bi-trash"></i> Delete User
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-header.bg-danger {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .alert {
+        border-radius: 0.5rem;
+    }
+
+    .badge {
+        font-size: 0.85em;
+    }
+
+    dl.row dt {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    dl.row dd {
+        margin-bottom: 0.5rem;
+    }
+</style>

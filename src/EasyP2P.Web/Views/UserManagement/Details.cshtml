@@ -1,0 +1,249 @@
+﻿@model EasyP2P.Web.Models.UserManagementViewModel
+
+@{
+    ViewData["Title"] = $"User Details - {Model.FullName}";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4>
+                        <i class="bi bi-person"></i>
+                        User Details - @Model.FullName
+                    </h4>
+                    <span class="badge @Model.StatusBadgeClass fs-6">
+                        @Model.StatusText
+                    </span>
+                </div>
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                    }
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["ErrorMessage"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                    }
+
+                    @if (TempData["TempPassword"] != null)
+                    {
+                            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                <strong>Temporary Password:</strong> @TempData["TempPassword"]
+                                <br><small>Please provide this password to the user and ask them to change it immediately.</small>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                    }
+
+                    <!-- User Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Personal Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">Full Name:</td>
+                                    <td>@Model.FullName</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Email:</td>
+                                    <td>
+                                        @Model.Email
+                                        @if (Model.EmailConfirmed)
+                                        {
+                                                <i class="bi bi-check-circle text-success" title="Email Confirmed"></i>
+                                        }
+                                        else
+                                        {
+                                                <i class="bi bi-exclamation-triangle text-warning" title="Email Not Confirmed"></i>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Phone Number:</td>
+                                    <td>
+                                        @(Model.PhoneNumber ?? "Not provided")
+                                        @if (!string.IsNullOrEmpty(Model.PhoneNumber) && Model.PhoneNumberConfirmed)
+                                        {
+                                                <i class="bi bi-check-circle text-success" title="Phone Confirmed"></i>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Department:</td>
+                                    <td>@(Model.Department ?? "Not assigned")</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Account Information</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">User ID:</td>
+                                    <td><code>@Model.Id</code></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Role:</td>
+                                    <td>
+                                        <span class="badge @Model.RoleBadgeClass">
+                                            @Model.Role
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Status:</td>
+                                    <td>
+                                        <span class="badge @Model.StatusBadgeClass">
+                                            @Model.StatusText
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Created Date:</td>
+                                    <td>@Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Security Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Security Settings</h5>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">Two-Factor Authentication:</td>
+                                    <td>
+                                        @if (Model.TwoFactorEnabled)
+                                        {
+                                                <span class="badge bg-success">Enabled</span>
+                                        }
+                                        else
+                                        {
+                                                <span class="badge bg-secondary">Disabled</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Lockout Status:</td>
+                                    <td>
+                                        @if (Model.IsLockedOut)
+                                        {
+                                                <span class="badge bg-danger">Locked Out</span>
+                                                <br>
+
+                                            <small class="text-muted">Until: @Model.LockoutEnd?.ToString("yyyy-MM-dd HH:mm")</small>
+                                        }
+                                        else
+                                        {
+                                                <span class="badge bg-success">Not Locked</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Failed Login Attempts:</td>
+                                    <td>
+                                        @Model.AccessFailedCount
+                                        @if (Model.AccessFailedCount > 0)
+                                        {
+                                                <i class="bi bi-exclamation-triangle text-warning"></i>
+                                        }
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Quick Actions</h5>
+                            <div class="d-grid gap-2">
+                                <form asp-action="ResetPassword" asp-route-id="@Model.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-warning w-100"
+                                            onclick="return confirm('Reset password for @Model.Email? A temporary password will be generated.')">
+                                        <i class="bi bi-key"></i> Reset Password
+                                    </button>
+                                </form>
+
+                                <form asp-action="ToggleStatus" asp-route-id="@Model.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" 
+                                            class="btn btn-@(Model.IsActive ? "warning" : "success") w-100"
+                                            onclick="return confirm('@(Model.IsActive ? "Deactivate" : "Activate") user @Model.Email?')">
+                                        <i class="bi bi-@(Model.IsActive ? "pause" : "play")"></i> 
+                                        @(Model.IsActive ? "Deactivate" : "Activate") User
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between flex-wrap gap-2">
+                                <!-- Left side - Navigation buttons -->
+                                <div>
+                                    <a asp-action="Index" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left"></i> Back to Users
+                                    </a>
+                                </div>
+
+                                <!-- Right side - Action buttons -->
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
+                                        <i class="bi bi-pencil"></i> Edit User
+                                    </a>
+
+                                    @if (Model.Role != EasyP2P.Web.Enums.UserRole.Administrator)
+                                    {
+                                            <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+                                                <i class="bi bi-trash"></i> Delete User
+                                            </a>
+                                    }
+                                    else
+                                    {
+                                            <button class="btn btn-danger" disabled title="Administrator accounts cannot be deleted">
+                                                <i class="bi bi-shield-lock"></i> Protected Account
+                                            </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-borderless td {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .badge {
+        font-size: 0.85em;
+    }
+
+    code {
+        font-size: 0.875em;
+        color: #e83e8c;
+        background-color: #f8f9fa;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+
+    .card {
+        border-radius: 0.75rem;
+    }
+
+    .alert {
+        border-radius: 0.5rem;
+    }
+</style>

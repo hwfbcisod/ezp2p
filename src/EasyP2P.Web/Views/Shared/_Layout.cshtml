@@ -54,6 +54,19 @@
                                     Suppliers
                                 </a>
                             </li>
+
+                            @* Administrator-only User Management *@
+                            @if (User.FindFirstValue("UserRole") == "Administrator")
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "UserManagement" ? "active" : "")"
+                                       asp-controller="UserManagement" asp-action="Index">
+                                        <i class="bi bi-people me-1"></i>
+                                        User Management
+                                    </a>
+                                </li>
+                            }
+
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-plus-circle me-1"></i>
@@ -70,6 +83,16 @@
                                             <i class="bi bi-building me-2"></i>New Supplier
                                         </a>
                                     </li>
+                                    @* Administrator-only user creation *@
+                                    @if (User.FindFirstValue("UserRole") == "Administrator")
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="UserManagement" asp-action="Create">
+                                                <i class="bi bi-person-plus me-2"></i>New User
+                                            </a>
+                                        </li>
+                                    }
                                 </ul>
                             </li>
                         </ul>
@@ -113,55 +136,55 @@
                 </div>
             </div>
         </nav>
-    </header>
+        </header>
 
-    <main role="main" class="flex-shrink-0">
-        @RenderBody()
-    </main>
+        <main role="main" class="flex-shrink-0">
+                            @RenderBody()
+        </main>
 
-    <footer class="bg-light border-top mt-5 py-4">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <p class="text-muted mb-0">
-                        &copy; 2025 - EasyP2P.Web - Procurement Management System
-                    </p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <a href="#" class="text-muted text-decoration-none">Support</a>
+        <footer class="bg-light border-top mt-5 py-4">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="text-muted mb-0">
+                            &copy; 2025 - EasyP2P.Web - Procurement Management System
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <a href="#" class="text-muted text-decoration-none">Support</a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </footer>
+        </footer>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+        <script src="~/lib/jquery/dist/jquery.min.js"></script>
+        <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="~/js/site.js" asp-append-version="true"></script>
 
-    <!-- NEW: Quick search functionality for suppliers -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('supplierQuickSearch');
-            const searchBtn = document.getElementById('quickSearchBtn');
+        <!-- NEW: Quick search functionality for suppliers -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const searchInput = document.getElementById('supplierQuickSearch');
+                const searchBtn = document.getElementById('quickSearchBtn');
 
-            function performSearch() {
-                const searchTerm = searchInput.value.trim();
-                if (searchTerm) {
-                    window.location.href = `/Supplier?search=${encodeURIComponent(searchTerm)}`;
+                function performSearch() {
+                    const searchTerm = searchInput.value.trim();
+                    if (searchTerm) {
+                        window.location.href = `/Supplier?search=${encodeURIComponent(searchTerm)}`;
+                    }
                 }
-            }
 
-            searchBtn.addEventListener('click', performSearch);
+                searchBtn.addEventListener('click', performSearch);
 
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    performSearch();
-                }
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        performSearch();
+                    }
+                });
             });
-        });
-    </script>
+        </script>
 
-    @await RenderSectionAsync("Scripts", required: false)
-</body>
-</html>
+                        @await RenderSectionAsync("Scripts", required: false)
+    </body>
+    </html>
