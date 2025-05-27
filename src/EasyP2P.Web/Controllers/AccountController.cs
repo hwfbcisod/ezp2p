@@ -47,7 +47,7 @@ public class AccountController : Controller
                 FirstName = model.FirstName,
                 LastName = model.LastName,
                 Department = model.Department,
-                Role = UserRole.Requestor // Default role
+                Role = UserRole.Requestor
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);

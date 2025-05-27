@@ -20,17 +20,8 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
-        try
-        {
-            var dashboardData = await _dashboardService.GetDashboardDataAsync();
-            return View(dashboardData);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error loading dashboard");
-            // Return empty dashboard on error
-            return View(new DashboardViewModel());
-        }
+        var dashboardData = await _dashboardService.GetDashboardDataAsync();
+        return View(dashboardData);
     }
 
     [AllowAnonymous]

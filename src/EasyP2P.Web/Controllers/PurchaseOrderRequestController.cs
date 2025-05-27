@@ -160,8 +160,8 @@ public class PurchaseOrderRequestController : Controller
     {
         try
         {
-            string currentUser = "ApproverUser"; // Replace with actual user
-            string rejectionReason = "Rejected via web interface"; // Could be from form input
+            string currentUser = _userContextService.GetCurrentUser();
+            string rejectionReason = "Rejected via web interface";
 
             var success = await _purchaseOrderRequestService.RejectRequestAsync(id, currentUser, rejectionReason);
 
@@ -213,47 +213,6 @@ public class PurchaseOrderRequestController : Controller
         return RedirectToAction(nameof(Details), new { id });
     }
 
-    // Helper action to add sample data for testing
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddSample()
-    {
-        var sampleRequests = new[]
-        {
-            new PurchaseOrderRequestInputModel
-            {
-                ItemName = "Laptop Computer",
-                Quantity = 5,
-                Comment = "For new employees",
-                Justification = "New hires require laptops for daily work",
-                Priority = "High",
-                Department = "IT",
-                BudgetCode = "IT-2025-001",
-                ExpectedDeliveryDate = DateTime.Now.AddDays(14)
-            },
-            new PurchaseOrderRequestInputModel
-            {
-                ItemName = "Office Supplies",
-                Quantity = 100,
-                Comment = "Monthly office supplies order",
-                Justification = "Regular monthly replenishment of office supplies",
-                Priority = "Medium",
-                Department = "Operations",
-                BudgetCode = "OPS-2025-012",
-                ExpectedDeliveryDate = DateTime.Now.AddDays(7)
-            }
-        };
-
-        foreach (var request in sampleRequests)
-        {
-            await _purchaseOrderRequestService.CreateRequestAsync(request, "SampleUser");
-        }
-
-        TempData["SuccessMessage"] = $"Added {sampleRequests.Length} sample purchase order requests.";
-        return RedirectToAction(nameof(Index));
-    }
-
-    // Dashboard action utilizing service layer
     public async Task<IActionResult> Dashboard(string? userFilter = null)
     {
         var dashboardData = await _purchaseOrderRequestService.GetDashboardDataAsync(userFilter);

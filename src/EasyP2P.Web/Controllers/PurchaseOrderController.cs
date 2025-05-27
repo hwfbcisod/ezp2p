@@ -17,19 +17,22 @@ public class PurchaseOrderController : Controller
 {
     private readonly IPurchaseOrderService _purchaseOrderService;
     private readonly IPurchaseOrderRequestService _purchaseOrderRequestService;
-    private readonly ISupplierService _supplierService; // NEW: Supplier service
+    private readonly ISupplierService _supplierService;
+    private readonly IUserContextService _userContextService;
     private readonly ILogger<PurchaseOrderController> _logger;
 
     public PurchaseOrderController(
         IPurchaseOrderService purchaseOrderService,
         IPurchaseOrderRequestService purchaseOrderRequestService,
-        ISupplierService supplierService, // NEW: Inject supplier service
+        ISupplierService supplierService,
+        IUserContextService userContextService,
         ILogger<PurchaseOrderController> logger)
     {
         _purchaseOrderService = purchaseOrderService;
         _purchaseOrderRequestService = purchaseOrderRequestService;
-        _supplierService = supplierService; // NEW: Store supplier service
+        _supplierService = supplierService;
         _logger = logger;
+        _userContextService = userContextService;
     }
 
     [RequiresPermission("ViewAllPO")]
@@ -76,21 +79,18 @@ public class PurchaseOrderController : Controller
     // GET: PurchaseOrder/Create/5 (where 5 is the purchase order request ID)
     public async Task<IActionResult> Create(int id)
     {
-        // Get the purchase order request to prefill the form
         var request = await _purchaseOrderRequestService.GetRequestByIdAsync(id);
         if (request == null)
         {
             return NotFound();
         }
 
-        // Business logic validation through service
         if (request.Status != "Approved")
         {
             TempData["ErrorMessage"] = "Only approved purchase order requests can be converted to purchase orders.";
             return RedirectToAction("Index", "PurchaseOrderRequest");
         }
 
-        // Check if a purchase order already exists for this request
         var existingOrders = await _purchaseOrderService.GetOrdersByRequestIdAsync(id);
         if (existingOrders.Any())
         {
@@ -98,10 +98,8 @@ public class PurchaseOrderController : Controller
             return RedirectToAction("Index");
         }
 
-        // NEW: Load suppliers for dropdown
         await LoadSuppliersForDropdown();
 
-        // Create a new model pre-filled with the request data
         var model = new PurchaseOrderModel
         {
             PurchaseOrderRequestId = request.Id,
@@ -115,14 +113,12 @@ public class PurchaseOrderController : Controller
         return View(model);
     }
 
-    // Enhanced Create method using service layer
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(PurchaseOrderModel model)
     {
         if (ModelState.IsValid)
         {
-            // Validate using service layer business rules
             var validationResult = await _purchaseOrderService.ValidateOrderAsync(model);
 
             if (!validationResult.IsValid)
@@ -133,7 +129,6 @@ public class PurchaseOrderController : Controller
                 }
             }
 
-            // Add warnings as informational messages
             foreach (var warning in validationResult.Warnings)
             {
                 TempData["WarningMessage"] = warning;
@@ -147,7 +142,6 @@ public class PurchaseOrderController : Controller
 
                     var orderId = await _purchaseOrderService.CreateOrderAsync(model, currentUser);
 
-                    // Update the corresponding POR status through service layer coordination
                     await _purchaseOrderRequestService.MarkPurchaseOrderCreatedAsync(
                         model.PurchaseOrderRequestId, currentUser);
 
@@ -165,7 +159,6 @@ public class PurchaseOrderController : Controller
             }
         }
 
-        // NEW: Reload suppliers if validation fails
         await LoadSuppliersForDropdown();
         return View(model);
     }
@@ -177,7 +170,7 @@ public class PurchaseOrderController : Controller
     {
         try
         {
-            string currentUser = "ApproverUser"; // Replace with actual user
+            string currentUser = _userContextService.GetCurrentUser();
 
             var success = await _purchaseOrderService.ApproveOrderAsync(id, currentUser);
 
@@ -206,7 +199,7 @@ public class PurchaseOrderController : Controller
     {
         try
         {
-            string currentUser = "ApproverUser"; // Replace with actual user
+            string currentUser = _userContextService.GetCurrentUser();
 
             var success = await _purchaseOrderService.RejectOrderAsync(id, currentUser);
 
@@ -234,7 +227,7 @@ public class PurchaseOrderController : Controller
     {
         try
         {
-            string currentUser = "CurrentUser"; // Replace with actual user
+            string currentUser = "CurrentUser";
 
             var success = await _purchaseOrderService.CancelOrderAsync(id, currentUser);
 
@@ -254,47 +247,6 @@ public class PurchaseOrderController : Controller
         }
 
         return RedirectToAction(nameof(Index));
-    }
-
-    // AJAX action to calculate the total price
-    [HttpPost]
-    public IActionResult CalculateTotalPrice(int quantity, decimal unitPrice)
-    {
-        decimal totalPrice = quantity * unitPrice;
-        return Json(new { totalPrice = totalPrice.ToString("C") });
-    }
-
-    // NEW: AJAX endpoint to get supplier information
-    [HttpGet]
-    public async Task<IActionResult> GetSupplierInfo(int supplierId)
-    {
-        try
-        {
-            var supplier = await _supplierService.GetSupplierByIdAsync(supplierId);
-            if (supplier == null)
-            {
-                return Json(new { success = false, message = "Supplier not found" });
-            }
-
-            return Json(new
-            {
-                success = true,
-                supplier = new
-                {
-                    id = supplier.Id,
-                    name = supplier.Name,
-                    paymentTerms = supplier.PaymentTerms,
-                    contactPerson = supplier.ContactPerson,
-                    email = supplier.Email,
-                    phone = supplier.Phone
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving supplier information for ID {SupplierId}", supplierId);
-            return Json(new { success = false, message = "Error retrieving supplier information" });
-        }
     }
 
     // NEW: Helper method to load suppliers for dropdown
@@ -328,21 +280,16 @@ public class PurchaseOrderController : Controller
         }
     }
 
-    // Private method for PDF generation (extracted from controller logic)
     private async Task<byte[]> GeneratePdfAsync(PurchaseOrderViewModel order)
     {
-        // Create a memory stream to write the PDF to
         var memoryStream = new MemoryStream();
 
-        // Configure writer properties to avoid BouncyCastle dependency issues
         var writerProperties = new iText.Kernel.Pdf.WriterProperties();
 
-        // Create a PDF writer and document
         var writer = new PdfWriter(memoryStream, writerProperties);
         var pdf = new PdfDocument(writer);
         var document = new Document(pdf);
 
-        // Set document margins
         document.SetMargins(36, 36, 36, 36);
 
         // Add title
@@ -425,12 +372,10 @@ public class PurchaseOrderController : Controller
             .SetTextAlignment(TextAlignment.CENTER);
         document.Add(legalNote);
 
-        // Close the document before accessing the stream
         document.Close();
         pdf.Close();
         writer.Close();
 
-        // Get the PDF bytes
         var pdfBytes = memoryStream.ToArray();
         memoryStream.Close();
 

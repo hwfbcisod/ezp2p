@@ -1,5 +1,4 @@
 ﻿using EasyP2P.Web.Data.Repositories.Interfaces;
-using EasyP2P.Web.Models;
 using EasyP2P.Web.Models.Database;
 using EasyP2P.Web.Services;
 using FluentAssertions;
@@ -9,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Xunit;
 
 namespace EasyP2P.Web.Tests.Services;
 
