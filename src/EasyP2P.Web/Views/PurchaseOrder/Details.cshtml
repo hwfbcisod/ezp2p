@@ -1,4 +1,5 @@
-﻿@model EasyP2P.Web.Models.PurchaseOrderViewModel
+﻿@using EasyP2P.Web.Enums
+@model EasyP2P.Web.Models.PurchaseOrderViewModel
 
 @{
     ViewData["Title"] = $"Purchase Order #{Model.Id}";
@@ -115,9 +116,29 @@
                             <h5 class="text-primary mb-3">Quick Actions</h5>
                             <div class="d-grid gap-2">
                                 <a asp-action="ExportPdf" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
-                                    <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                                    <i class="bi bi-file-earmark-pdf"></i> Download
                                 </a>
-                                @if (Model.Status == "PendingApproval")
+                                @if (Model.Status == Enum.GetName(PurchaseOrderState.FullyReceived) ||
+                                Model.Status == Enum.GetName(PurchaseOrderState.PartiallyReceived) || 
+                                Model.Status == Enum.GetName(PurchaseOrderState.PendingPayment) || 
+                                Model.Status == Enum.GetName(PurchaseOrderState.PaymentMade) || 
+                                Model.Status == Enum.GetName(PurchaseOrderState.Completed))
+                                {
+                                    <a asp-action="DownloadDeliveryNote" asp-route-id="@Model.Id" class="btn btn-outline-success">
+                                        <i class="bi bi-file-earmark-arrow-down"></i> Download Delivery Note
+                                    </a>
+                                }
+                                @if (Model.Status == Enum.GetName(PurchaseOrderState.Invoiced) ||
+                                Model.Status == Enum.GetName(PurchaseOrderState.ThreeWayMatch) ||
+                                Model.Status == Enum.GetName(PurchaseOrderState.PendingPayment) ||
+                                Model.Status == Enum.GetName(PurchaseOrderState.PaymentMade) ||
+                                Model.Status == Enum.GetName(PurchaseOrderState.Completed))
+                                {
+                                    <a asp-action="DownloadInvoice" asp-route-id="@Model.Id" class="btn btn-outline-warning">
+                                        <i class="bi bi-receipt"></i> Download Invoice
+                                    </a>
+                                }
+                                @if (Model.Status == Enum.GetName(PurchaseOrderState.PendingApproval))
                                 {
                                     <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#actionModal">
                                         <i class="bi bi-gear"></i> Manage Order

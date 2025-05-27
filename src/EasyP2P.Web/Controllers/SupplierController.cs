@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using EasyP2P.Web.Attributes;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace EasyP2P.Web.Controllers;
 
@@ -33,28 +34,49 @@ public class SupplierController : Controller
         {
             IEnumerable<SupplierViewModel> suppliers;
 
-            if (!string.IsNullOrEmpty(status) && Enum.TryParse<SupplierStatus>(status, out var supplierStatus))
-            {
-                suppliers = await _supplierService.GetSuppliersByStatusAsync(supplierStatus);
-            }
-            else if (!string.IsNullOrEmpty(search))
-            {
-                suppliers = await _supplierService.SearchSuppliersAsync(search);
-            }
-            else if (!string.IsNullOrEmpty(location))
-            {
-                suppliers = await _supplierService.GetSuppliersByLocationAsync(location, location, location);
-            }
-            else
-            {
-                suppliers = await _supplierService.GetAllSuppliersAsync();
-            }
+            // Apply filters based on query parameters (this part remains for initial load if needed)
+            // However, the primary filtering will now be client-side after initial load.
+            // For a fully server-side filtered approach with this new model, you'd pass the FilterViewModel here.
+            // For now, let's assume initial load gets all relevant suppliers based on broad filters.
+            suppliers = await _supplierService.GetAllSuppliersAsync();
 
+            // Pass filter values to view for maintaining state if needed for other purposes
             ViewBag.CurrentStatus = status;
             ViewBag.CurrentSearch = search;
             ViewBag.CurrentLocation = location;
 
+            // Get statistics for dashboard cards
             ViewBag.Statistics = await _supplierService.GetSupplierStatisticsAsync();
+
+            // Prepare the FilterViewModel
+            var filterModel = new FilterViewModel
+            {
+                CurrentFilterType = FilterType.Supplier,
+                StatusOptions = new List<SelectListItem>
+                {
+                    new SelectListItem { Value = "", Text = "All Statuses" },
+                    new SelectListItem { Value = "Active", Text = "Active" },
+                    new SelectListItem { Value = "Inactive", Text = "Inactive" },
+                    new SelectListItem { Value = "Pending", Text = "Pending" },
+                    new SelectListItem { Value = "Suspended", Text = "Suspended" }
+                },
+                RatingOptions = new List<SelectListItem>
+                {
+                    new SelectListItem { Value = "", Text = "All Ratings" },
+                    new SelectListItem { Value = "5", Text = "5 Stars" },
+                    new SelectListItem { Value = "4", Text = "4+ Stars" },
+                    new SelectListItem { Value = "3", Text = "3+ Stars" },
+                    new SelectListItem { Value = "2", Text = "2+ Stars" },
+                    new SelectListItem { Value = "1", Text = "1+ Star" }
+                },
+                // Populate existing filter values if they were passed in the query string for initial state
+                Status = status,
+                SearchTerm = search, // Assuming 'search' from query maps to generic SearchTerm for suppliers
+                Location = location,
+                MinRating = 0
+            };
+
+            ViewData["FilterModel"] = filterModel; // Pass the filter model to the view
 
             return View(suppliers);
         }
@@ -62,6 +84,8 @@ public class SupplierController : Controller
         {
             _logger.LogError(ex, "Error loading suppliers index page");
             TempData["ErrorMessage"] = "An error occurred while loading suppliers.";
+            // Still pass an empty filter model in case of error to prevent view from breaking
+            ViewData["FilterModel"] = new FilterViewModel { CurrentFilterType = FilterType.Supplier };
             return View(Enumerable.Empty<SupplierViewModel>());
         }
     }

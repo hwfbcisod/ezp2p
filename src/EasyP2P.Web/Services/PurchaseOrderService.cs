@@ -20,6 +20,11 @@ public interface IPurchaseOrderService
     Task<bool> CancelOrderAsync(int id, string cancelledBy);
     Task<ValidationResult> ValidateOrderAsync(PurchaseOrderModel model);
     Task<int> CreateOrderAsync(PurchaseOrderModel model, string createdBy);
+    Task<bool> SendOrderAsync(int id);
+    Task<bool> AcknowledgeOrderAsync(int id);
+    Task<bool> AttachDeliveryNoteAsync(int id, string deliveryNoteFilePath);
+    Task AttachInvoiceAsync(int id, string invoiceFilePath);
+    Task<bool> PayOrderAsync(int id);
 }
 
 public class PurchaseOrderService : IPurchaseOrderService
@@ -220,6 +225,112 @@ public class PurchaseOrderService : IPurchaseOrderService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error cancelling order {Id}", id);
+            return false;
+        }
+    }
+
+    public async Task<bool> SendOrderAsync(int id)
+    {
+        // TODO: Make this method really send the purchase order to a supplier, not just update the status
+        try
+        {
+            var result = await _repository.UpdateStatusAsync(id, PurchaseOrderState.Sent);
+
+            if (result)
+            {
+                _logger.LogInformation("Purchase Order {Id} sent to supplier", id);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while trying to send order {Id} to supplier!", id);
+            return false;
+        }
+    }
+
+    public async Task<bool> AcknowledgeOrderAsync(int id)
+    {
+        //TODO: Make this method really acknowledge the purchase order, not just update the status
+        try
+        {
+            var result = await _repository.UpdateStatusAsync(id, PurchaseOrderState.Acknowledged);
+            if (result)
+            {
+                _logger.LogInformation("Purchase Order {Id} acknowledged by supplier", id);
+            }
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error acknowledging order {Id}", id);
+            return false;
+        }
+    }
+
+    public async Task<bool> AttachDeliveryNoteAsync(int id, string deliveryNoteFilePath)
+    {
+        try
+        {
+            // TODO: Scrape the data from the delivery note and compare it to data in the purchase order.
+            // Depending on the result, update with either FullyReceived or PartiallyReceived status.
+            // Use an LLM to perform these tasks.
+            using var fileStream = new FileStream(deliveryNoteFilePath, FileMode.Open, FileAccess.Read);
+            
+            var result = await _repository.UpdateStatusAsync(id, PurchaseOrderState.FullyReceived);
+            if (result)
+            {
+                _logger.LogInformation("Items for purchase order {Id} have been fully delivered by the supplier", id);
+            }
+            return result;
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error attaching delivery note for order {Id}", id);
+            throw;
+        }
+    }
+
+    public async Task AttachInvoiceAsync(int id, string invoiceFilePath)
+    {
+        try
+        {
+            using var fileStream = new FileStream(invoiceFilePath, FileMode.Open, FileAccess.Read);
+            var result = await _repository.UpdateStatusAsync(id, PurchaseOrderState.Invoiced);
+            // TODO: Scrape the data from the invoice and perform a three way match with the corresponding purchase order and delivery note
+            // Use an LLM to perform these tasks.
+            result = await _repository.UpdateStatusAsync(id, PurchaseOrderState.ThreeWayMatch);
+            result = await _repository.UpdateStatusAsync(id, PurchaseOrderState.PendingPayment);
+            if (result)
+            {
+                _logger.LogInformation("Invoice for purchase order {Id} has been attached and matched", id);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error attaching invoice for order {Id}", id);
+            throw;
+        }
+    }
+
+    public async Task<bool> PayOrderAsync(int id)
+    {
+        try
+        {
+            // TODO: Implement actual payment processing logic here.
+            var result = await _repository.UpdateStatusAsync(id, PurchaseOrderState.Completed);
+            // TODO: Attach proof of payment document to the purchase order and make it availabe for Download in the Details view.
+            if (result)
+            {
+                _logger.LogInformation("Purchase Order {Id} has been paid", id);
+            }
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error paying for order {Id}", id);
             return false;
         }
     }

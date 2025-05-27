@@ -41,6 +41,11 @@ public enum PurchaseOrderState
     Sent = 5,
 
     /// <summary>
+    /// The purchase order has been acknowledged by the vendor
+    /// </summary>
+    Acknowledged = 6,
+
+    /// <summary>
     /// A subset of the ordered items has been delivered and formally received
     /// by the organization, while the complete order remains unfulfilled.
     /// Accommodates multi-line orders and phased delivery schedules.
@@ -68,23 +73,28 @@ public enum PurchaseOrderState
     ThreeWayMatch = 9,
 
     /// <summary>
+    /// The purchase order has been approved for payment processing,
+    /// </summary>
+    PendingPayment = 10,
+
+    /// <summary>
     /// Financial settlement has been executed in accordance with the approved
     /// invoice and organizational payment terms. Funds have been transferred
     /// to the supplier through established payment mechanisms.
     /// </summary>
-    PaymentMade = 10,
+    PaymentMade = 11,
 
     /// <summary>
     /// The supplier has confirmed receipt of payment, and all procedural
     /// requirements have been satisfied. This terminal state represents
     /// successful completion of the entire procurement cycle.
     /// </summary>
-    Completed = 11,
+    Completed = 12,
 
     /// <summary>
     /// The purchase order has been terminated at any point within the process
     /// lifecycle. May result from business requirement changes, supplier
     /// performance issues, delivery complications, or strategic organizational decisions.
     /// </summary>
-    Cancelled = 12
+    Cancelled = 13
 }

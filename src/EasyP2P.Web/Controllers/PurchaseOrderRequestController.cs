@@ -4,6 +4,7 @@ using EasyP2P.Web.Models;
 using EasyP2P.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace EasyP2P.Web.Controllers;
 
@@ -26,12 +27,34 @@ public class PurchaseOrderRequestController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var filteredRequests = await _purchaseOrderRequestService.GetFilteredRequestsAsync();
-
-        ViewBag.UserRole = _userContextService.GetCurrentUserRole();
+        var allRequests = await _purchaseOrderRequestService.GetFilteredRequestsAsync(); // Your existing method
+        ViewBag.UserRole = _userContextService.GetCurrentUserRole(); // Keep existing ViewBag items if needed by other parts of the view
         ViewBag.CanViewAllDepartments = _userContextService.CanViewAllDepartments();
 
-        return View(filteredRequests);
+        var filterModel = new FilterViewModel
+        {
+            CurrentFilterType = FilterType.PurchaseOrderRequest,
+            StatusOptions = // Populate from PurchaseOrderRequestState enum or a service
+                Enum.GetValues(typeof(PurchaseOrderRequestState))
+                    .Cast<PurchaseOrderRequestState>()
+                    .Select(s => new SelectListItem { Value = s.ToString(), Text = s.ToString() })
+                    .ToList(),
+            PriorityOptions = new List<SelectListItem> { /* ... populate ... */ },
+            DepartmentOptions = allRequests.Select(r => r.Department)
+                                         .Where(d => !string.IsNullOrEmpty(d))
+                                         .Distinct()
+                                         .OrderBy(d => d)
+                                         .Select(d => new SelectListItem { Value = d, Text = d })
+                                         .ToList()
+        };
+        
+        filterModel.StatusOptions.Insert(0, new SelectListItem { Value = "", Text = "All Statuses" });
+        filterModel.PriorityOptions.Insert(0, new SelectListItem { Value = "", Text = "All Priorities" });
+        filterModel.DepartmentOptions.Insert(0, new SelectListItem { Value = "", Text = "All Departments" });
+
+        ViewData["FilterModel"] = filterModel; // Pass it via ViewData or directly in the main model
+
+        return View(allRequests); // Pass your main data model as usual
     }
 
     public async Task<IActionResult> Details(int id)

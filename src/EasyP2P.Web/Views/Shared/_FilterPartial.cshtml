@@ -1,0 +1,166 @@
+﻿@model EasyP2P.Web.Models.FilterViewModel
+
+<div class="card mb-3">
+    <div class="card-header">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse"
+                data-bs-target="#filtersCollapse" aria-expanded="false" id="filtersToggleBtn">
+            <i class="bi bi-funnel"></i> Filters & Search
+        </button>
+        <button class="btn btn-outline-danger btn-sm ms-2" id="clearFiltersBtn" style="display: none;">
+            <i class="bi bi-x-circle"></i> Clear Filters
+        </button>
+    </div>
+    <div class="collapse" id="filtersCollapse">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label asp-for="Status" class="form-label">Status</label>
+                    <select asp-for="Status" asp-items="Model.StatusOptions" class="form-select filter-input" data-filter-key="status">
+                    </select>
+                </div>
+
+                @if (Model.CurrentFilterType == FilterType.PurchaseOrderRequest || Model.CurrentFilterType == FilterType.PurchaseOrder)
+                {
+                    <div class="col-md-3">
+                        <label asp-for="SearchTerm" class="form-label">Item Search</label>
+                        <input asp-for="SearchTerm" class="form-control filter-input" placeholder="Search items..." data-filter-key="item" />
+                    </div>
+                }
+
+                @if (Model.CurrentFilterType == FilterType.Supplier)
+                {
+                    <div class="col-md-3">
+                        <label asp-for="SearchTerm" class="form-label">Supplier Name/Contact</label>
+                        <input asp-for="SearchTerm" class="form-control filter-input" placeholder="Search name/contact..." data-filter-key="name" />
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Location" class="form-label">Location</label>
+                        <input asp-for="Location" class="form-control filter-input" placeholder="City, State, Country..." data-filter-key="location" />
+                    </div>
+                }
+
+                @if (Model.CurrentFilterType == FilterType.PurchaseOrderRequest)
+                {
+                    <div class="col-md-3">
+                        <label asp-for="Priority" class="form-label">Priority</label>
+                        <select asp-for="Priority" asp-items="Model.PriorityOptions" class="form-select filter-input" data-filter-key="priority">
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Department" class="form-label">Department</label>
+                        <select asp-for="Department" asp-items="Model.DepartmentOptions" class="form-select filter-input" data-filter-key="department">
+                            @* Populate with distinct departments from your data or a predefined list *@
+                        </select>
+                    </div>
+                }
+
+                @if (Model.CurrentFilterType == FilterType.Supplier)
+                {
+                    <div class="col-md-3">
+                        <label asp-for="MinRating" class="form-label">Min Rating</label>
+                        <select asp-for="MinRating" asp-items="Model.RatingOptions" class="form-select filter-input" data-filter-key="rating">
+                        </select>
+                    </div>
+                }
+            </div>
+
+            <div class="row g-3 mt-2">
+                @if (Model.CurrentFilterType == FilterType.PurchaseOrderRequest || Model.CurrentFilterType == FilterType.PurchaseOrder)
+                {
+                    <div class="col-md-2">
+                        <label asp-for="EntityId" class="form-label">@(Model.CurrentFilterType == FilterType.PurchaseOrderRequest ? "Request ID" : "PO ID")</label>
+                        <input asp-for="EntityId" type="number" class="form-control filter-input" placeholder="Enter ID" data-filter-key="@(Model.CurrentFilterType == FilterType.PurchaseOrderRequest ? "requestId" : "poId")" />
+                    </div>
+                }
+                @if (Model.CurrentFilterType == FilterType.PurchaseOrder)
+                {
+                    <div class="col-md-2">
+                        <label asp-for="RelatedRequestId" class="form-label">POR ID</label>
+                        <input asp-for="RelatedRequestId" type="number" class="form-control filter-input" placeholder="Enter POR ID" data-filter-key="porId" />
+                    </div>
+                }
+
+
+                @if (Model.CurrentFilterType == FilterType.PurchaseOrderRequest || Model.CurrentFilterType == FilterType.PurchaseOrder)
+                {
+                    <div class="col-md-2">
+                        <label asp-for="QuantityMin" class="form-label">Quantity</label>
+                        <div class="d-flex gap-1">
+                            <input asp-for="QuantityMin" type="number" class="form-control filter-input" placeholder="Min" data-filter-key="quantityMin" />
+                            <input asp-for="QuantityMax" type="number" class="form-control filter-input" placeholder="Max" data-filter-key="quantityMax" />
+                        </div>
+                    </div>
+                }
+
+                @if (Model.CurrentFilterType == FilterType.PurchaseOrder)
+                {
+                    <div class="col-md-2">
+                        <label asp-for="UnitPriceMin" class="form-label">Unit Price</label>
+                        <div class="d-flex gap-1">
+                            <input asp-for="UnitPriceMin" type="number" step="0.01" class="form-control filter-input" placeholder="Min" data-filter-key="unitPriceMin" />
+                            <input asp-for="UnitPriceMax" type="number" step="0.01" class="form-control filter-input" placeholder="Max" data-filter-key="unitPriceMax" />
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label asp-for="TotalPriceMin" class="form-label">Total Price</label>
+                        <div class="d-flex gap-1">
+                            <input asp-for="TotalPriceMin" type="number" step="0.01" class="form-control filter-input" placeholder="Min" data-filter-key="totalPriceMin" />
+                            <input asp-for="TotalPriceMax" type="number" step="0.01" class="form-control filter-input" placeholder="Max" data-filter-key="totalPriceMax" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Supplier" class="form-label">Supplier</label>
+                        <input asp-for="Supplier" class="form-control filter-input" placeholder="Search supplier..." data-filter-key="supplier" />
+                    </div>
+                }
+
+                @if (Model.CurrentFilterType == FilterType.PurchaseOrderRequest)
+                {
+                    <div class="col-md-2">
+                        <label asp-for="BudgetCode" class="form-label">Budget Code</label>
+                        <input asp-for="BudgetCode" class="form-control filter-input" placeholder="Budget code..." data-filter-key="budgetCode" />
+                    </div>
+                    <div class="col-md-2">
+                        <label asp-for="RequestedBy" class="form-label">Requested By</label>
+                        <input asp-for="RequestedBy" class="form-control filter-input" placeholder="User name..." data-filter-key="requestedBy" />
+                    </div>
+                }
+
+                <div class="col-md-3">
+                    <label asp-for="DateFrom" class="form-label">Date Range</label>
+                    <div class="d-flex gap-1">
+                        <input asp-for="DateFrom" type="date" class="form-control filter-input" data-filter-key="dateFrom" />
+                        <input asp-for="DateTo" type="date" class="form-control filter-input" data-filter-key="dateTo" />
+                    </div>
+                </div>
+
+                @if (Model.CurrentFilterType == FilterType.PurchaseOrderRequest)
+                {
+                    <div class="col-md-2">
+                        <label asp-for="DeliveryDateFilter" class="form-label">Expected Delivery</label>
+                        <select asp-for="DeliveryDateFilter" asp-items="Model.DeliveryDateOptions" class="form-select filter-input" data-filter-key="deliveryDate">
+                        </select>
+                    </div>
+                }
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <span class="filtered-count">0</span> of <span class="total-row-count">0</span> items shown
+                        </small>
+                        <div>
+                            <button class="btn btn-sm btn-primary" id="applyFiltersBtn">
+                                <i class="bi bi-check"></i> Apply Filters
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" id="resetFiltersBtn">
+                                <i class="bi bi-arrow-clockwise"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

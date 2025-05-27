@@ -1,29 +1,36 @@
 ﻿@model IEnumerable<EasyP2P.Web.Models.SupplierViewModel>
+@using EasyP2P.Web.Enums
+@using EasyP2P.Web.Models
+@using System.Security.Claims
 
 @{
     ViewData["Title"] = "Suppliers";
     var statistics = ViewBag.Statistics as EasyP2P.Web.Models.SupplierStatistics;
+    var currentUserRole = (UserRole)Enum.Parse(typeof(UserRole), User.FindFirstValue("UserRole") ?? "Requestor");
+    var filterModel = (FilterViewModel)ViewData["FilterModel"];
 }
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Supplier Management</h2>
         <div>
-            <a asp-action="Create" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> New Supplier
-            </a>
+            @if (User.IsInRole(UserRole.Purchaser.ToString()) || User.IsInRole(UserRole.Administrator.ToString()))
+            {
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> New Supplier
+                </a>
+            }
             <a asp-action="TopRated" class="btn btn-outline-success">
                 <i class="bi bi-star"></i> Top Rated
             </a>
         </div>
     </div>
 
-    <!-- Statistics Summary Cards -->
     @if (statistics != null)
     {
         <div class="row mb-4">
             <div class="col-md-2">
-                <div class="card text-center status-card clickable-card" data-status="Active" role="button" tabindex="0">
+                <div class="card text-center status-card clickable-card" data-status-filter-value="Active" role="button" tabindex="0">
                     <div class="card-body">
                         <h5 class="card-title text-success">@statistics.ActiveSuppliers</h5>
                         <p class="card-text">
@@ -33,7 +40,7 @@
                 </div>
             </div>
             <div class="col-md-2">
-                <div class="card text-center status-card clickable-card" data-status="Pending" role="button" tabindex="0">
+                <div class="card text-center status-card clickable-card" data-status-filter-value="Pending" role="button" tabindex="0">
                     <div class="card-body">
                         <h5 class="card-title text-warning">@statistics.PendingSuppliers</h5>
                         <p class="card-text">
@@ -43,7 +50,7 @@
                 </div>
             </div>
             <div class="col-md-2">
-                <div class="card text-center status-card clickable-card" data-status="Inactive" role="button" tabindex="0">
+                <div class="card text-center status-card clickable-card" data-status-filter-value="Inactive" role="button" tabindex="0">
                     <div class="card-body">
                         <h5 class="card-title text-secondary">@statistics.InactiveSuppliers</h5>
                         <p class="card-text">
@@ -53,7 +60,7 @@
                 </div>
             </div>
             <div class="col-md-2">
-                <div class="card text-center status-card clickable-card" data-status="Suspended" role="button" tabindex="0">
+                <div class="card text-center status-card clickable-card" data-status-filter-value="Suspended" role="button" tabindex="0">
                     <div class="card-body">
                         <h5 class="card-title text-danger">@statistics.SuspendedSuppliers</h5>
                         <p class="card-text">
@@ -63,7 +70,8 @@
                 </div>
             </div>
             <div class="col-md-2">
-                <div class="card text-center status-card">
+                <div class="card text-center status-card clickable-card" data-rating-filter-value="4" role="button" tabindex="0">
+                    @* Example: filter for 4+ stars *@
                     <div class="card-body">
                         <h5 class="card-title text-info">@statistics.HighRatedSuppliers</h5>
                         <p class="card-text">
@@ -73,7 +81,7 @@
                 </div>
             </div>
             <div class="col-md-2">
-                <div class="card text-center status-card clickable-card" data-status="" role="button" tabindex="0">
+                <div class="card text-center status-card clickable-card" data-status-filter-value="" role="button" tabindex="0">
                     <div class="card-body border-primary">
                         <h5 class="card-title text-primary">@statistics.TotalSuppliers</h5>
                         <p class="card-text">
@@ -84,63 +92,6 @@
             </div>
         </div>
     }
-
-    <!-- Filters Section -->
-    <div class="card mb-3">
-        <div class="card-header">
-            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#filtersCollapse" aria-expanded="false" id="filtersToggleBtn">
-                <i class="bi bi-funnel"></i> Filters & Search
-            </button>
-            <button class="btn btn-outline-danger btn-sm ms-2" id="clearFiltersBtn" style="display: none;">
-                <i class="bi bi-x-circle"></i> Clear Filters
-            </button>
-        </div>
-        <div class="collapse" id="filtersCollapse">
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label for="statusFilter" class="form-label">Status</label>
-                        <select id="statusFilter" class="form-select filter-input">
-                            <option value="">All Statuses</option>
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Suspended">Suspended</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="nameFilter" class="form-label">Supplier Name</label>
-                        <input type="text" id="nameFilter" class="form-control filter-input" placeholder="Search by name...">
-                    </div>
-                    <div class="col-md-3">
-                        <label for="locationFilter" class="form-label">Location</label>
-                        <input type="text" id="locationFilter" class="form-control filter-input" placeholder="City, State, Country...">
-                    </div>
-                    <div class="col-md-3">
-                        <label for="ratingFilter" class="form-label">Min Rating</label>
-                        <select id="ratingFilter" class="form-select filter-input">
-                            <option value="">All Ratings</option>
-                            <option value="5">5 Stars</option>
-                            <option value="4">4+ Stars</option>
-                            <option value="3">3+ Stars</option>
-                            <option value="2">2+ Stars</option>
-                            <option value="1">1+ Stars</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">
-                                <span id="filteredCount">@Model.Count()</span> of @Model.Count() suppliers shown
-                            </small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -158,19 +109,21 @@
         </div>
     }
 
+    <partial name="_FilterPartial" model="filterModel" />
+
     <div class="card shadow">
         <div class="card-header bg-primary text-white">
             <h5>
                 <i class="bi bi-building"></i> All Suppliers
-                <span class="badge bg-light text-dark" id="totalCount">@Model.Count()</span>
-                <span class="badge bg-warning text-dark" id="filteredBadge" style="display: none;">Filtered</span>
+                <span class="badge bg-light text-dark total-grid-count">@Model.Count()</span>
+                <span class="badge bg-warning text-dark filtered-grid-badge" style="display: none;">Filtered</span>
             </h5>
         </div>
         <div class="card-body">
             @if (Model.Any())
             {
                 <div class="table-responsive">
-                    <table class="table table-hover" id="suppliersTable">
+                    <table class="table table-hover" id="mainGridTable">
                         <thead class="table-light">
                             <tr>
                                 <th>
@@ -199,11 +152,15 @@
                         <tbody>
                             @foreach (var supplier in Model)
                             {
-                                <tr data-name="@supplier.Name.ToLower()"
-                                    data-contact="@supplier.ContactPerson.ToLower()"
-                                    data-city="@supplier.City.ToLower()"
-                                    data-state="@supplier.State.ToLower()"
-                                    data-country="@supplier.Country.ToLower()"
+                                <tr data-id="@supplier.Id"
+                                    data-name="@supplier.Name.ToLower()"
+                                    data-contact-person="@(supplier.ContactPerson?.ToLower() ?? "")"
+                                    data-email="@(supplier.Email?.ToLower() ?? "")"
+                                    data-phone="@(supplier.Phone?.ToLower() ?? "")"
+                                    data-city="@(supplier.City?.ToLower() ?? "")"
+                                    data-state="@(supplier.State?.ToLower() ?? "")"
+                                    data-country="@(supplier.Country?.ToLower() ?? "")"
+                                    data-location="@($"{supplier.City} {supplier.State} {supplier.Country}".ToLower().Trim())"
                                     data-status="@supplier.Status.ToLower()"
                                     data-rating="@(supplier.Rating ?? 0)">
                                     <td>
@@ -226,7 +183,9 @@
                                         @supplier.ContactPerson
                                         @if (!string.IsNullOrEmpty(supplier.Phone))
                                         {
-                                            <br><small class="text-muted">
+                                            <br>
+
+                                            <small class="text-muted">
                                                 <i class="bi bi-telephone"></i> @supplier.Phone
                                             </small>
                                         }
@@ -238,11 +197,15 @@
                                         }
                                         @if (!string.IsNullOrEmpty(supplier.State))
                                         {
-                                            @(string.IsNullOrEmpty(supplier.City) ? "" : ", ")@supplier.State
+                                            @(string.IsNullOrEmpty(supplier.City) ? "" : ", ")
+
+                                            @supplier.State
                                         }
                                         @if (!string.IsNullOrEmpty(supplier.Country))
                                         {
-                                            <br><small class="text-muted">@supplier.Country</small>
+                                            <br>
+
+                                            <small class="text-muted">@supplier.Country</small>
                                         }
                                     </td>
                                     <td>
@@ -254,7 +217,9 @@
                                         @if (supplier.Rating.HasValue)
                                         {
                                             <span class="@supplier.RatingClass fw-bold">@supplier.RatingStars</span>
-                                            <br><small class="text-muted">(@supplier.Rating/5)</small>
+                                            <br>
+
+                                            <small class="text-muted">(@supplier.Rating/5)</small>
                                         }
                                         else
                                         {
@@ -263,17 +228,17 @@
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a asp-action="Details" asp-route-id="@supplier.Id" class="btn btn-info btn-sm">
+                                            <a asp-action="Details" asp-route-id="@supplier.Id" class="btn btn-info btn-sm" title="View Details">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            @if (supplier.CanEdit)
+                                            @if (supplier.CanEdit && (User.IsInRole(UserRole.Purchaser.ToString()) || User.IsInRole(UserRole.Administrator.ToString())))
                                             {
-                                                <a asp-action="Edit" asp-route-id="@supplier.Id" class="btn btn-outline-primary btn-sm">
+                                                <a asp-action="Edit" asp-route-id="@supplier.Id" class="btn btn-outline-primary btn-sm" title="Edit">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
                                             }
 
-                                            @if (supplier.CanActivate)
+                                            @if (supplier.CanActivate && (User.IsInRole(UserRole.Purchaser.ToString()) || User.IsInRole(UserRole.Administrator.ToString())))
                                             {
                                                 <form asp-action="Activate" asp-route-id="@supplier.Id" method="post" style="display: inline;">
                                                     @Html.AntiForgeryToken()
@@ -285,7 +250,7 @@
                                                 </form>
                                             }
 
-                                            @if (supplier.CanDeactivate)
+                                            @if (supplier.CanDeactivate && (User.IsInRole(UserRole.Purchaser.ToString()) || User.IsInRole(UserRole.Administrator.ToString())))
                                             {
                                                 <form asp-action="Deactivate" asp-route-id="@supplier.Id" method="post" style="display: inline;">
                                                     @Html.AntiForgeryToken()
@@ -297,9 +262,9 @@
                                                 </form>
                                             }
 
-                                            @if (supplier.CanDelete)
+                                            @if (supplier.CanDelete && (User.IsInRole(UserRole.Purchaser.ToString()) || User.IsInRole(UserRole.Administrator.ToString())))
                                             {
-                                                <a asp-action="Delete" asp-route-id="@supplier.Id" class="btn btn-danger btn-sm">
+                                                <a asp-action="Delete" asp-route-id="@supplier.Id" class="btn btn-danger btn-sm" title="Delete">
                                                     <i class="bi bi-trash"></i>
                                                 </a>
                                             }
@@ -317,9 +282,12 @@
                     <i class="bi bi-building display-1 text-muted"></i>
                     <h4 class="text-muted mt-3">No Suppliers Found</h4>
                     <p class="text-muted">Add your first supplier to start managing your vendor relationships.</p>
-                    <a asp-action="Create" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> Add First Supplier
-                    </a>
+                    @if (User.IsInRole(UserRole.Purchaser.ToString()) || User.IsInRole(UserRole.Administrator.ToString()))
+                    {
+                        <a asp-action="Create" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add First Supplier
+                        </a>
+                    }
                 </div>
             }
         </div>
@@ -327,6 +295,52 @@
 </div>
 
 <style>
+    /* Add your existing styles for .sort-btn, .filter-input, .card, .clickable-card etc. here */
+    .sort-btn {
+        color: #6c757d;
+        text-decoration: none !important;
+    }
+
+        .sort-btn:hover {
+            color: #0d6efd;
+        }
+
+        .sort-btn.active {
+            color: #0d6efd;
+        }
+
+    .filter-input:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    .table tbody tr.filtered-out {
+        display: none;
+    }
+
+    .card {
+        border-radius: 0.75rem;
+    }
+
+    .clickable-card {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+    }
+
+        .clickable-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            border-color: #0d6efd;
+        }
+
+    .active-status-card {
+        border-color: #0d6efd !important;
+        background-color: #f8f9fa;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+    }
+
     .status-card .card-title {
         font-weight: bold;
         font-size: 1.5rem;
@@ -336,194 +350,23 @@
         font-weight: 500;
         margin-bottom: 0;
     }
-
-    .clickable-card {
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border: 2px solid transparent;
-    }
-
-    .clickable-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-        border-color: #0d6efd;
-    }
-
-    .sort-btn {
-        color: #6c757d;
-        text-decoration: none !important;
-    }
-
-    .sort-btn:hover {
-        color: #0d6efd;
-    }
-
-    .filter-input {
-        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-    }
-
-    .filter-input:focus {
-        border-color: #86b7fe;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-    }
-
-    .card {
-        border-radius: 0.75rem;
-    }
 </style>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const filterInputs = document.querySelectorAll('.filter-input');
-        const tableRows = document.querySelectorAll('#suppliersTable tbody tr');
-        const totalCount = tableRows.length;
-        const filteredBadge = document.getElementById('filteredBadge');
-        const totalCountSpan = document.getElementById('totalCount');
-        const filtersCollapse = document.getElementById('filtersCollapse');
-        const filtersToggleBtn = document.getElementById('filtersToggleBtn');
-        const clearFiltersBtn = document.getElementById('clearFiltersBtn');
-        const statusCards = document.querySelectorAll('.status-card.clickable-card');
-
-        // Bootstrap collapse instance
-        const bsCollapse = new bootstrap.Collapse(filtersCollapse, { toggle: false });
-
-        // Status card click handlers
-        statusCards.forEach(card => {
-            card.addEventListener('click', function() {
-                const status = this.dataset.status;
-                
-                // Clear other filters
-                filterInputs.forEach(input => input.value = '');
-                
-                // Set status filter
-                if (status) {
-                    document.getElementById('statusFilter').value = status;
-                }
-                
-                // Show filters and apply
-                bsCollapse.show();
-                applyFilters();
-            });
+@section Scripts {
+    <script src="~/js/shared-grid-filters.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const config = {
+                tableId: 'mainGridTable', // Ensure this ID matches your table
+                filterContainerId: 'filtersCollapse',
+                filterToggleBtnId: 'filtersToggleBtn',
+                clearFiltersBtnId: 'clearFiltersBtn',
+                applyFiltersBtnId: 'applyFiltersBtn',
+                resetFiltersBtnId: 'resetFiltersBtn',
+                statusCardClass: 'status-card',
+                entityType: 'Supplier' // Specific for this page
+            };
+            initializeGridFilters(config);
         });
-
-        // Clear filters
-        clearFiltersBtn.addEventListener('click', function() {
-            filterInputs.forEach(input => input.value = '');
-            applyFilters();
-            this.style.display = 'none';
-            filtersToggleBtn.innerHTML = '<i class="bi bi-funnel"></i> Filters & Search';
-        });
-
-        // Apply filters on input change
-        filterInputs.forEach(input => {
-            input.addEventListener('input', applyFilters);
-        });
-
-        function applyFilters() {
-            const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
-            const nameFilter = document.getElementById('nameFilter').value.toLowerCase();
-            const locationFilter = document.getElementById('locationFilter').value.toLowerCase();
-            const ratingFilter = parseInt(document.getElementById('ratingFilter').value) || 0;
-
-            let visibleCount = 0;
-            let hasActiveFilters = statusFilter || nameFilter || locationFilter || ratingFilter;
-
-            tableRows.forEach(row => {
-                const name = row.dataset.name;
-                const contact = row.dataset.contact;
-                const city = row.dataset.city;
-                const state = row.dataset.state;
-                const country = row.dataset.country;
-                const status = row.dataset.status;
-                const rating = parseInt(row.dataset.rating) || 0;
-
-                let isVisible = true;
-
-                if (statusFilter && status !== statusFilter) isVisible = false;
-                if (nameFilter && !name.includes(nameFilter) && !contact.includes(nameFilter)) isVisible = false;
-                if (locationFilter && !city.includes(locationFilter) && !state.includes(locationFilter) && !country.includes(locationFilter)) isVisible = false;
-                if (ratingFilter && rating < ratingFilter) isVisible = false;
-
-                if (isVisible) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            // Update UI
-            document.getElementById('filteredCount').textContent = visibleCount;
-            
-            if (hasActiveFilters) {
-                filteredBadge.style.display = 'inline-block';
-                totalCountSpan.textContent = visibleCount;
-                clearFiltersBtn.style.display = 'inline-block';
-                filtersToggleBtn.innerHTML = '<i class="bi bi-funnel-fill"></i> Filters & Search (Active)';
-            } else {
-                filteredBadge.style.display = 'none';
-                totalCountSpan.textContent = totalCount;
-                clearFiltersBtn.style.display = 'none';
-                filtersToggleBtn.innerHTML = '<i class="bi bi-funnel"></i> Filters & Search';
-            }
-        }
-
-        // Sorting functionality
-        document.querySelectorAll('.sort-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const column = this.dataset.column;
-                const currentDirection = this.dataset.direction;
-                const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
-                
-                // Reset all sort buttons
-                document.querySelectorAll('.sort-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                    btn.innerHTML = '<i class="bi bi-arrow-up-down"></i>';
-                });
-                
-                // Update current button
-                this.classList.add('active');
-                this.innerHTML = newDirection === 'asc' ? '<i class="bi bi-arrow-up"></i>' : '<i class="bi bi-arrow-down"></i>';
-                this.dataset.direction = newDirection;
-                
-                // Sort table
-                sortTable(column, newDirection);
-            });
-        });
-
-        function sortTable(column, direction) {
-            const tbody = document.querySelector('#suppliersTable tbody');
-            const rows = Array.from(tableRows);
-
-            rows.sort((a, b) => {
-                let aValue, bValue;
-
-                switch (column) {
-                    case 'name':
-                        aValue = a.dataset.name;
-                        bValue = b.dataset.name;
-                        break;
-                    case 'status':
-                        aValue = a.dataset.status;
-                        bValue = b.dataset.status;
-                        break;
-                    case 'rating':
-                        aValue = parseInt(a.dataset.rating) || 0;
-                        bValue = parseInt(b.dataset.rating) || 0;
-                        break;
-                    default:
-                        return 0;
-                }
-
-                if (typeof aValue === 'string') {
-                    return direction === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-                } else {
-                    return direction === 'asc' ? aValue - bValue : bValue - aValue;
-                }
-            });
-
-            rows.forEach(row => tbody.appendChild(row));
-        }
-    });
-</script>
-
+    </script>
+}
